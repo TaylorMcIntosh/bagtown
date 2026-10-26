@@ -6,11 +6,13 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define MAX_WORDS 6
+
 // OBJECTS {{{
 typedef struct object {
 	const char *name;
 	const char *desc;
-
+	
 	struct object *loc;
 	struct object *north;
 	struct object *south;
@@ -31,14 +33,14 @@ typedef struct object {
 
 object objects[] = {
 	// PLAYER
-	{"player", "the player", field, NULL, NULL, NULL, NULL, 100, 20},
+	{"player", "player", field, NULL, NULL, NULL, NULL, 100, 20},
 	// MAP
-	{"cave", "a small cavern", NULL, NULL, field, NULL, NULL, 9999, 9999},
-	{"field", "an open field", NULL, cave, NULL, NULL, NULL, 9999, 9999},
+	{"cave", "A small cavern", NULL, NULL, field, NULL, NULL, 9999, 9999},
+	{"field", "An open field", NULL, cave, NULL, NULL, NULL, 9999, 9999},
 	// ITEMS
-	{"coin", "a golden coin", cave, NULL, NULL, NULL, NULL, 1, 0},
+	{"coin", "A golden coin", cave, NULL, NULL, NULL, NULL, 1, 0},
 	// PEOPLE
-	{"man", "a grumpy old man", field, NULL, NULL, NULL, NULL, 90, 20},
+	{"man", "A grumpy old man", field, NULL, NULL, NULL, NULL, 90, 20},
 };
 
 bool check_loc(const char *noun, object *obj, object *target_loc) {
@@ -60,8 +62,8 @@ void look_around(object *loc) {
 }
 
 void grab_object(object *obj) {
-	if(obj->weight >= player->capacity) {
-		printf("%s is too heavy for you to grab right now.\n", obj->desc);
+	if(obj->weight > player->capacity) {
+		printf("%s is too heavy for you to pick up.\n", obj->desc);
 		return;
 	}
 	obj->loc = player;
@@ -102,8 +104,6 @@ void exec_move(const char *noun) {
 	exec_look("around");
 }
 
-// TODO : Will need weight check
-// TODO : Move item check to new function
 void exec_grab(const char *noun) {
 	object *obj;
 	for (obj = objects; obj < obj_end; obj++)
@@ -125,11 +125,23 @@ void exec_drop(const char *noun) {
 }
 // }}}
 
+//TODO : ADD BETTER PARSING (2 NOUNS)
+
 // INPUT {{
 static void handle_input(char *input) {
-	char *verb = strtok(input, " \n");
-	char *noun = strtok(NULL, "\n");
+	
+	char *words[MAX_WORDS] = {NULL};
+	int word_count = 0;
 
+	char *token = strtok(input, " \n");
+	while(token != NULL) {
+		words[word_count++] = token;
+		token = strtok(NULL, " \n");
+	}
+
+	char *verb = words[0];
+	char *noun = words[1];
+	
 	if (verb == NULL) { return; }		 // return if null
 	else if (strcmp(verb, "quit") == 0)	 // quit -> quits game
 		is_playing = false; 
@@ -148,7 +160,7 @@ static void handle_input(char *input) {
 
 // MAIN && GAME {{{
 static void game_loop() {
-	printf("\n--->");
+	printf("\n---> ");
 	fgets(input, sizeof input, stdin);
 	handle_input(input);
 }
