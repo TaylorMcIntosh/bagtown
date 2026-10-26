@@ -16,6 +16,9 @@ typedef struct object {
 	struct object *south;
 	struct object *east;
 	struct object *west;
+
+	int weight;
+	int capacity;
 } object;
 
 #define player (objects + 0)
@@ -27,32 +30,39 @@ typedef struct object {
 
 object objects[] = {
 	// PLAYER
-	{"player", "the player", field, NULL, NULL, NULL, NULL},
+	{"player", "the player", field, NULL, NULL, NULL, NULL, 100, 20},
 	// MAP
-	{"cave", "a small cavern", NULL, NULL, field, NULL, NULL},
-	{"field", "an empty field", NULL, cave, NULL, NULL, NULL},
+	{"cave", "a small cavern", NULL, NULL, field, NULL, NULL, 9999, 9999},
+	{"field", "an open field", NULL, cave, NULL, NULL, NULL, 9999, 9999},
 	// ITEMS
-	{"coin", "a golden coin", cave, NULL, NULL, NULL, NULL},
+	{"coin", "a golden coin", cave, NULL, NULL, NULL, NULL, 1, 0},
 };
+
+bool check_loc(const char *noun, object *obj, object *target_loc) {
+	return strcmp(noun, obj->name) == 0 && obj->loc == target_loc;
+}
 
 void list_objects(object *loc) {
 	object *obj;
-	printf("You see:");
+	printf("You see:\n");
 	for (obj = objects; obj < obj_end; obj++) {
 		if (obj->loc == loc && obj != player)
-			printf("\n%s", obj->desc);
+			printf("%s\n", obj->desc);
 	}
 }
 
+void look_around(object *loc) {
+	printf("You are in %s\n", loc->desc);
+	list_objects(loc);
+}
+
 void grab_object(object *obj) {
-	printf("You picked up ");
-	printf("%s", obj->desc);
+	printf("You picked up %s\n", obj->desc);
 	obj->loc = player;
 }
 
 void drop_object(object *obj) {
-	printf("You dropped ");
-	printf("%s", obj->desc);
+	printf("You dropped %s\n", obj->desc);
 	obj->loc = player->loc;
 }
 // }}}
@@ -63,9 +73,8 @@ static char input[100];
 // ACTIONS {{{
 void exec_look(const char *noun) {
 	if(strcmp(noun, "around") == 0)
-		printf("You are in %s\n", player->loc->desc);
-	else { printf("I do not understand what you wish to see."); }
-	list_objects(player->loc);
+		look_around(player->loc);
+	else { printf("I do not understand what you wish to see.\n"); }
 }
 
 void exec_move(const char *noun) {
@@ -85,11 +94,12 @@ void exec_move(const char *noun) {
 }
 
 // TODO : Will need weight check
+// TODO : Move item check to new function
 void exec_grab(const char *noun) {
 	object *obj;
 	for (obj = objects; obj < obj_end; obj++)
-		if (strcmp(noun, obj->name) == 0 && player->loc == obj->loc) {
-			grab_object(obj);	
+		if(check_loc(noun, obj, player->loc)) {
+			grab_object(obj);
 			return;
 		}
 	printf("There is no %s here.\n", noun);
@@ -98,7 +108,7 @@ void exec_grab(const char *noun) {
 void exec_drop(const char *noun) {
 	object *obj;
 	for(obj = objects; obj < obj_end; obj++)
-		if(strcmp(noun, obj->name) == 0 && obj->loc == player) {
+		if(check_loc(noun, obj, player)) {
 			drop_object(obj);
 			return;
 		}
@@ -106,10 +116,10 @@ void exec_drop(const char *noun) {
 }
 // }}}
 
-// IO {{
+// INPUT {{
 static void handle_input(char *input) {
 	char *verb = strtok(input, " \n");
-	char *noun = strtok(NULL, " \n");
+	char *noun = strtok(NULL, "\n");
 
 	if (verb == NULL) { return; }		 // return if null
 	else if (strcmp(verb, "quit") == 0)	 // quit -> quits game
@@ -135,6 +145,7 @@ static void game_loop() {
 }
 
 int main(int argc, char *argv[]) {
+	look_around(player->loc);
 	while(is_playing) { game_loop(); }
 	return 0;
 }
