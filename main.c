@@ -25,8 +25,9 @@ typedef struct object {
 #define cave   (objects + 1)
 #define field  (objects + 2)
 #define coin   (objects + 3)
+#define man    (objects + 4)
 
-#define obj_end   (objects + 4)
+#define obj_end   (objects + 5)
 
 object objects[] = {
 	// PLAYER
@@ -36,6 +37,8 @@ object objects[] = {
 	{"field", "an open field", NULL, cave, NULL, NULL, NULL, 9999, 9999},
 	// ITEMS
 	{"coin", "a golden coin", cave, NULL, NULL, NULL, NULL, 1, 0},
+	// PEOPLE
+	{"man", "a grumpy old man", field, NULL, NULL, NULL, NULL, 90, 20},
 };
 
 bool check_loc(const char *noun, object *obj, object *target_loc) {
@@ -57,13 +60,19 @@ void look_around(object *loc) {
 }
 
 void grab_object(object *obj) {
-	printf("You picked up %s\n", obj->desc);
+	if(obj->weight >= player->capacity) {
+		printf("%s is too heavy for you to grab right now.\n", obj->desc);
+		return;
+	}
 	obj->loc = player;
+	player->capacity -= obj->weight;
+	printf("You picked up %s.\n", obj->desc);
 }
 
 void drop_object(object *obj) {
-	printf("You dropped %s\n", obj->desc);
 	obj->loc = player->loc;
+	player->capacity += obj->weight;
+	printf("You dropped %s. [%d]\n", obj->desc, player->capacity);
 }
 // }}}
 
@@ -112,7 +121,7 @@ void exec_drop(const char *noun) {
 			drop_object(obj);
 			return;
 		}
-	printf("You have no %s to drop.\n", obj->name);
+	printf("You have no %s to drop.\n", noun);
 }
 // }}}
 
