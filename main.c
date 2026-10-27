@@ -8,6 +8,9 @@
 
 #define MAX_WORDS 8
 
+static bool is_playing = true;
+static char input[100];
+
 // OBJECTS {{{
 typedef struct object {
 	const char *name;
@@ -75,25 +78,25 @@ void grab_object(object *obj) {
 void drop_object(object *obj) {
 	obj->loc = player->loc;
 	player->capacity += obj->weight;
-	printf("You dropped %s. [%d]\n", obj->desc, player->capacity);
+	printf("You dropped %s.\n", obj->desc);
 }
 // }}}
 
-static bool is_playing = true;
-static char input[100];
-
 // COMMANDS {{{
-void exec_quit(const char *noun) { is_playing = false; }
-
-void exec_inventory(const char *noun) { list_objects(player); }
-
-void exec_look(const char *noun) {
-	if(strcmp(noun, "around") == 0)
-		look_around(player->loc);
-	else { printf("I do not understand what you wish to see.\n"); }
+void exec_quit(const char *noun, const char *target) { 
+	is_playing = false; 
 }
 
-void exec_move(const char *noun) {
+void exec_inventory(const char *noun, const char *target) { 
+	list_objects(player); 
+}
+
+void exec_look(const char *noun, const char *target) {
+	if(strcmp(noun, "around") == 0) look_around(player->loc);
+	else printf("I do not understand what you wish to see.\n");
+}
+
+void exec_move(const char *noun, const char *target) {
 	if (strcmp(noun, "north") == 0 && player->loc->north != NULL)
 		player->loc = player->loc->north;
 	else if (strcmp(noun, "south") == 0 && player->loc->south != NULL)
@@ -106,10 +109,10 @@ void exec_move(const char *noun) {
 		printf("There is nothing of note %s of here.\n", noun);
 		return;
 	}
-	exec_look("around");
+	exec_look("around", "");
 }
 
-void exec_grab(const char *noun) {
+void exec_grab(const char *noun, const char *target) {
 	object *obj;
 	for (obj = objects; obj < NUM_OBJ; obj++)
 		if(check_loc(noun, obj, player->loc)) {
@@ -119,7 +122,7 @@ void exec_grab(const char *noun) {
 	printf("There is no %s here.\n", noun);
 }
 
-void exec_drop(const char *noun) {
+void exec_drop(const char *noun, const char *target) {
 	object *obj;
 	for(obj = objects; obj < NUM_OBJ; obj++)
 		if(check_loc(noun, obj, player)) {
@@ -129,7 +132,7 @@ void exec_drop(const char *noun) {
 	printf("You have no %s to drop.\n", noun);
 }
 
-typedef void (*command_func)(const char *noun);
+typedef void (*command_func)(const char *noun, const char *target);
 
 typedef struct {
 	const char *name;
@@ -148,9 +151,18 @@ static const command commands[] = {
 #define NUM_CMD (sizeof(commands) / sizeof(commands[0]))
 // }}}
 
-//TODO : ADD BETTER PARSING (2 NOUNS)
+// INPUT {{{
+bool is_filler(const char *token) {
+	return  strcmp(token, "i") == 0 ||
+		strcmp(token, "the") == 0 ||
+	       	strcmp(token, "at") == 0 ||
+		strcmp(token, "in") == 0 ||
+		strcmp(token, "on") == 0 ||
+		strcmp(token, "into") == 0 ||
+		strcmp(token, "onto") == 0 ||
+		strcmp(token, "a") == 0; 
+}
 
-// INPUT {{
 static void handle_input(char *input) {
 	
 	char *words[MAX_WORDS] = {NULL};
@@ -158,41 +170,17 @@ static void handle_input(char *input) {
 	
 	char *token = strtok(input, " \n");
 	while(token != NULL) {
-		if (strcmp(token, "i") == 0 ||
-		    strcmp(token, "the") == 0 ||
-	       	    strcmp(token, "at") == 0 ||
-		    strcmp(token, "in") == 0 ||
-		    strcmp(token, "on") == 0 ||
-		    strcmp(token, "into") == 0 ||
-		    strcmp(token, "onto") == 0 ||
-		    strcmp(token, "a") == 0) {
-			token = strtok(NULL, " \n");
-			continue;
-		}
-		words[word_count++] = token;
+		if (!is_filler(token)) words[word_count++] = token;
 		token = strtok(NULL, " \n");
 	}
-	
-	
-	char *verb = words[0];
-	char *noun = words[1];
-	// I drop the coin into the cave carefully. <- SAMPLE INPUT
 
-	// tokenize this sentece into:
-	// subject (I)   	  -> Ignores the first word if I
-	// action (drop) 	  -> required -> Checks against commands array
-	// action_noun (coin) 	  -> required -> Checks against objects array
-	// target_noun (cave)	  -> may be required depending, you can drop the coin without specific target, though need a target to attack
-	// descriptor (carefully) -> not required, just adds flavor to replies
-	// turn them all lowercase
-	// keep it all as words[] if possible -> specifically words[4] -> action, action_noun, target_noun, descriptor
 	for(size_t i = 0; i < NUM_CMD; i++) {
-		if(strcmp(verb, commands[i].name) == 0) {
-			commands[i].func(noun);
+		if(strcmp(words[0], commands[i].name) == 0) {
+			commands[i].func(words[1], words[2]);
 			return;
 		}
 	}
-	printf("I do not understand how to '%s'.\n", verb);
+	printf("I do not understand how to '%s'.\n", words[0]);
 }
 // }}}
 
