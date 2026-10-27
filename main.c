@@ -83,13 +83,9 @@ static bool is_playing = true;
 static char input[100];
 
 // COMMANDS {{{
-void exec_quit(const char *noun) {
-	is_playing = false;
-}
+void exec_quit(const char *noun) { is_playing = false; }
 
-void exec_inventory(const char *noun) {
-	list_objects(player);
-}
+void exec_inventory(const char *noun) { list_objects(player); }
 
 void exec_look(const char *noun) {
 	if(strcmp(noun, "around") == 0)
@@ -141,12 +137,12 @@ typedef struct {
 } command;
 
 static const command commands[] = {
-	{"quit", exec_quit},
-	{"look", exec_look},
-	{"move", exec_move},
-	{"grab", exec_grab},
-	{"drop", exec_drop},
-	{"inventory", exec_inventory},
+	{"quit"		, exec_quit},
+	{"look"		, exec_look},
+	{"move"		, exec_move},
+	{"grab"		, exec_grab},
+	{"drop"		, exec_drop},
+	{"inventory"	, exec_inventory},
 };
 
 #define NUM_CMD (sizeof(commands) / sizeof(commands[0]))
@@ -166,7 +162,11 @@ static void handle_input(char *input) {
 		token = strtok(NULL, " \n");
 	}
 	
-	// I drop the coin into the cave carefully.
+	
+	char *verb = words[0];
+	char *noun = words[1];
+	// I drop the coin into the cave carefully. <- SAMPLE INPUT
+
 	// tokenize this sentece into:
 	// subject (I)   	  -> Ignores the first word if I
 	// action (drop) 	  -> required -> Checks against commands array
@@ -175,10 +175,9 @@ static void handle_input(char *input) {
 	// descriptor (carefully) -> not required, just adds flavor to replies
 	// turn them all lowercase
 	// keep it all as words[] if possible -> specifically words[4] -> action, action_noun, target_noun, descriptor
-
 	for(size_t i = 0; i < NUM_CMD; i++) {
-		if(strcmp(words[0], commands[i].name) == 0) {
-			commands[i].func(words[1]);
+		if(strcmp(verb, commands[i].name) == 0) {
+			commands[i].func(noun);
 		}
 	}
 }
