@@ -155,9 +155,20 @@ static void handle_input(char *input) {
 	
 	char *words[MAX_WORDS] = {NULL};
 	int word_count = 0;
-
+	
 	char *token = strtok(input, " \n");
 	while(token != NULL) {
+		if (strcmp(token, "i") == 0 ||
+		    strcmp(token, "the") == 0 ||
+	       	    strcmp(token, "at") == 0 ||
+		    strcmp(token, "in") == 0 ||
+		    strcmp(token, "on") == 0 ||
+		    strcmp(token, "into") == 0 ||
+		    strcmp(token, "onto") == 0 ||
+		    strcmp(token, "a") == 0) {
+			token = strtok(NULL, " \n");
+			continue;
+		}
 		words[word_count++] = token;
 		token = strtok(NULL, " \n");
 	}
@@ -178,8 +189,10 @@ static void handle_input(char *input) {
 	for(size_t i = 0; i < NUM_CMD; i++) {
 		if(strcmp(verb, commands[i].name) == 0) {
 			commands[i].func(noun);
+			return;
 		}
 	}
+	printf("I do not understand how to '%s'.\n", verb);
 }
 // }}}
 
