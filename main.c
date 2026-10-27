@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define MAX_WORDS 6
+#define MAX_WORDS 8
 
 // OBJECTS {{{
 typedef struct object {
@@ -29,7 +29,7 @@ typedef struct object {
 #define coin   (objects + 3)
 #define man    (objects + 4)
 
-#define obj_end   (objects + 5)
+#define NUM_OBJ   (objects + 5)
 
 object objects[] = {
 	// PLAYER
@@ -43,6 +43,7 @@ object objects[] = {
 	{"man", "A grumpy old man", field, NULL, NULL, NULL, NULL, 90, 20},
 };
 
+
 bool check_loc(const char *noun, object *obj, object *target_loc) {
 	return strcmp(noun, obj->name) == 0 && obj->loc == target_loc;
 }
@@ -50,7 +51,7 @@ bool check_loc(const char *noun, object *obj, object *target_loc) {
 void list_objects(object *loc) {
 	object *obj;
 	printf("You see:\n");
-	for (obj = objects; obj < obj_end; obj++) {
+	for (obj = objects; obj < NUM_OBJ; obj++) {
 		if (obj->loc == loc && obj != player)
 			printf("%s\n", obj->desc);
 	}
@@ -81,7 +82,15 @@ void drop_object(object *obj) {
 static bool is_playing = true;
 static char input[100];
 
-// ACTIONS {{{
+// COMMANDS {{{
+void exec_quit(const char *noun) {
+	is_playing = false;
+}
+
+void exec_inventory(const char *noun) {
+	list_objects(player);
+}
+
 void exec_look(const char *noun) {
 	if(strcmp(noun, "around") == 0)
 		look_around(player->loc);
@@ -106,7 +115,7 @@ void exec_move(const char *noun) {
 
 void exec_grab(const char *noun) {
 	object *obj;
-	for (obj = objects; obj < obj_end; obj++)
+	for (obj = objects; obj < NUM_OBJ; obj++)
 		if(check_loc(noun, obj, player->loc)) {
 			grab_object(obj);
 			return;
@@ -116,13 +125,31 @@ void exec_grab(const char *noun) {
 
 void exec_drop(const char *noun) {
 	object *obj;
-	for(obj = objects; obj < obj_end; obj++)
+	for(obj = objects; obj < NUM_OBJ; obj++)
 		if(check_loc(noun, obj, player)) {
 			drop_object(obj);
 			return;
 		}
 	printf("You have no %s to drop.\n", noun);
 }
+
+typedef void (*command_func)(const char *noun);
+
+typedef struct {
+	const char *name;
+	command_func func;
+} command;
+
+static const command commands[] = {
+	{"quit", exec_quit},
+	{"look", exec_look},
+	{"move", exec_move},
+	{"grab", exec_grab},
+	{"drop", exec_drop},
+	{"inventory", exec_inventory},
+};
+
+#define NUM_CMD (sizeof(commands) / sizeof(commands[0]))
 // }}}
 
 //TODO : ADD BETTER PARSING (2 NOUNS)
@@ -138,23 +165,22 @@ static void handle_input(char *input) {
 		words[word_count++] = token;
 		token = strtok(NULL, " \n");
 	}
-
-	char *verb = words[0];
-	char *noun = words[1];
 	
-	if (verb == NULL) { return; }		 // return if null
-	else if (strcmp(verb, "quit") == 0)	 // quit -> quits game
-		is_playing = false; 
-	else if (strcmp(verb, "look") == 0)	 // look -> looks at noun
-		exec_look(noun);
-	else if (strcmp(verb, "move") == 0)	 // move -> moves to noun
-		exec_move(noun);
-	else if (strcmp(verb, "grab") == 0)	 // grab -> pick up noun
-		exec_grab(noun);
-	else if (strcmp(verb, "drop") == 0)	 // drop -> drop noun
-		exec_drop(noun);
-	else if (strcmp(verb, "inventory") == 0) // inventory -> list items located at player
-		list_objects(player);
+	// I drop the coin into the cave carefully.
+	// tokenize this sentece into:
+	// subject (I)   	  -> Ignores the first word if I
+	// action (drop) 	  -> required -> Checks against commands array
+	// action_noun (coin) 	  -> required -> Checks against objects array
+	// target_noun (cave)	  -> may be required depending, you can drop the coin without specific target, though need a target to attack
+	// descriptor (carefully) -> not required, just adds flavor to replies
+	// turn them all lowercase
+	// keep it all as words[] if possible -> specifically words[4] -> action, action_noun, target_noun, descriptor
+
+	for(size_t i = 0; i < NUM_CMD; i++) {
+		if(strcmp(words[0], commands[i].name) == 0) {
+			commands[i].func(words[1]);
+		}
+	}
 }
 // }}}
 
