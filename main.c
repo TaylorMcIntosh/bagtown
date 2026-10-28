@@ -139,15 +139,9 @@ void exec_fill(const char *noun, const char *target) {
 	object *obj = get_object(noun);
 	object *tar = get_object(target);
 	if(obj == NULL || tar == NULL) return;
-	if(obj->holds_liquid && tar->is_liquid && obj->capacity >= tar->weight) {
-		fill_object(obj, tar);	
-	}
-	else if(!obj->holds_liquid && !tar->is_liquid && obj->capacity >= tar->weight) {
-		fill_object(obj, tar);
-	}
-	else if(obj->holds_liquid && !tar->is_liquid) {
-		printf("%s cannot hold %s.\n", obj->desc, tar->desc);
-	}
+	else if(obj->holds_liquid && tar->is_liquid && obj->capacity >= tar->weight) fill_object(obj, tar);
+	else if(!obj->holds_liquid && !tar->is_liquid && obj->capacity >= tar->weight) fill_object(obj, tar);
+	else printf("%s cannot hold %s.\n", obj->desc, tar->desc);
 }
 
 void exec_empty(const char *noun, const char *target) {
@@ -157,6 +151,7 @@ void exec_empty(const char *noun, const char *target) {
 		printf("You have emptied: \n");
 		for(obj2 = objects; obj2 < NUM_OBJ; obj2++) {
 			if(obj == obj2->loc) {
+				obj->capacity += obj2->weight;
 				obj2->loc = player->loc;
 				printf("%s\n", obj2->desc);
 			}
@@ -221,6 +216,10 @@ void exec_grab(const char *noun, const char *target) {
 	}
 	else if(obj->loc == tar && tar->health > 0) {
 		printf("no.\n");
+		return;
+	}
+	else if(obj->loc == player->loc && tar->loc == player) {
+		exec_fill(target, noun);
 		return;
 	}
 	printf("There is no %s here.\n", noun);
