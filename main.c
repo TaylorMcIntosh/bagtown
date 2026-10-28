@@ -19,6 +19,7 @@ static char input[100];
 typedef struct object {
 	const char *name;
 	const char *desc;
+	const char *content;
 	
 	struct object *loc;
 	struct object *dest;	
@@ -32,26 +33,28 @@ typedef struct object {
 #define player    (objects + 0)
 #define cave      (objects + 1)
 #define field     (objects + 2)
-#define coin      (objects + 3)
-#define man       (objects + 4)
-#define cave_entr (objects + 5)
-#define cave_exit (objects + 6)
+#define vial      (objects + 3)
+#define coin      (objects + 4)
+#define man       (objects + 5)
+#define cave_entr (objects + 6)
+#define cave_exit (objects + 7)
 
-#define NUM_OBJ   (objects + 7)
+#define NUM_OBJ   (objects + 8)
 
 object objects[] = {
 	// PLAYER
-	{"player"   , "player"          , field, NULL, NULL, 100, 20},
+	{"player"   , "player"          , "You have ", field, NULL, NULL, 100, 20},
 	// MAP
-	{"cave"     , "a small cavern"  , NULL, NULL, NULL, 9999, 9999},
-	{"field"    , "an open field"   , NULL, NULL, NULL, 9999, 9999},
+	{"cave"     , "a small cavern"  , "You see ", NULL, NULL, NULL, 9999, 9999},
+	{"field"    , "an open field"   , "You see", NULL, NULL, NULL, 9999, 9999},
 	// ITEMS
-	{"vial"     , "an empty vial"   , cave, NULL, NULL, 1, 0},
+	{"vial"     , "a glass vial"    , "It's filled with ", cave, NULL, NULL, 1, 1},
+	{"coin"     , "a golden coin"   , "", man, NULL, NULL, 1, 0},
 	// PEOPLE
-	{"man"      , "a grumpy old man", field, NULL, NULL, 90, 20},
+	{"man"      , "a grumpy old man", "They have ", field, NULL, NULL, 90, 20},
 	// PASSAGES
-	{"cave_entr", "a cave entrance" , field, cave, NULL, 9999, 9999},
-	{"cave_exit", "a cave exit"     , cave, field, NULL, 9999, 9999},
+	{"cave_entr", "a cave entrance" , "", field, cave, NULL, 9999, 9999},
+	{"cave_exit", "a cave exit"     , "", cave, field, NULL, 9999, 9999},
 };
 
 object *get_object(const char *noun) {
@@ -64,7 +67,7 @@ object *get_object(const char *noun) {
 
 void list_objects(object *loc) {
 	object *obj;
-	printf("You see:\n");
+	printf("%s\n", loc->content);
 	for (obj = objects; obj < NUM_OBJ; obj++) {
 		if (obj->loc == loc && obj != player)
 			printf("%s\n", obj->desc);
