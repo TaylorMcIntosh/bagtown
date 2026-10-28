@@ -120,6 +120,26 @@ void exec_move(const char *noun, const char *target) {
 	exec_look("around", "");
 }
 
+void exec_equip(const char *noun, const char *target) {
+	object *obj = get_object(noun);
+	if(obj->loc == player) {
+		player->equip = obj;
+		printf("You equipped the %s.\n", player->equip->name);
+		return;
+	}
+	printf("You have no %s to equip.\n", noun);
+}
+
+void exec_unequip(const char *noun, const char *target) {
+	object *obj = get_object(noun);
+	if(obj == player->equip) {
+		player->equip = NULL;
+		printf("You unequipped the %s.\n", obj->desc);
+		return;
+	}
+	printf("You are not holding %s.\n", noun);
+}
+
 void exec_grab(const char *noun, const char *target) {
 	object *obj = get_object(noun);
 	if(obj->loc == player->loc) {
@@ -131,12 +151,18 @@ void exec_grab(const char *noun, const char *target) {
 
 void exec_drop(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(obj->loc == player) {
+	if(obj->loc == player && obj != player->equip) {
+		drop_object(obj);
+		return;
+	}
+	else if(obj == player->equip) {
+		exec_unequip(noun, target);
 		drop_object(obj);
 		return;
 	}
 	printf("You have no %s to drop.\n", noun);
 }
+
 
 typedef void (*command_func)(const char *noun, const char *target);
 
@@ -151,6 +177,8 @@ static const command commands[] = {
 	{"move"		, exec_move},
 	{"grab"		, exec_grab},
 	{"drop"		, exec_drop},
+	{"equip"	, exec_equip},
+	{"unequip"	, exec_unequip},
 	{"inventory"	, exec_inventory},
 };
 
