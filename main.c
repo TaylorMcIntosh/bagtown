@@ -11,6 +11,10 @@
 static bool is_playing = true;
 static char input[100];
 
+// TODO : contents [ preface list_objects ], fill [ fills a container with given object ],
+//	  empty [ empties a container into location ], talk [ talk to sentient object (health>0 || animated) ],
+//	  give [ gives object to sentient object ]
+
 // OBJECTS {{{
 typedef struct object {
 	const char *name;
@@ -42,7 +46,7 @@ object objects[] = {
 	{"cave"     , "a small cavern"  , NULL, NULL, NULL, 9999, 9999},
 	{"field"    , "an open field"   , NULL, NULL, NULL, 9999, 9999},
 	// ITEMS
-	{"coin"     , "a golden coin"   , cave, NULL, NULL, 1, 0},
+	{"vial"     , "an empty vial"   , cave, NULL, NULL, 1, 0},
 	// PEOPLE
 	{"man"      , "a grumpy old man", field, NULL, NULL, 90, 20},
 	// PASSAGES
@@ -54,6 +58,7 @@ object *get_object(const char *noun) {
 	object *obj;
 	for (obj = objects; obj < NUM_OBJ; obj++)
 		if(strcmp(noun, obj->name) == 0) return obj;
+	printf("I do not know what a '%s' is.\n", noun);
 	return NULL;
 }
 
@@ -115,14 +120,14 @@ void exec_look(const char *noun, const char *target) {
 
 void exec_move(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(get_passage(player->loc, obj) != NULL)
+	if(obj != NULL && get_passage(player->loc, obj) != NULL)
 		player->loc = obj;
 	exec_look("around", "");
 }
 
 void exec_equip(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(obj->loc == player) {
+	if(obj != NULL && obj->loc == player) {
 		player->equip = obj;
 		printf("You equipped the %s.\n", player->equip->name);
 		return;
@@ -132,7 +137,7 @@ void exec_equip(const char *noun, const char *target) {
 
 void exec_unequip(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(obj == player->equip) {
+	if(obj != NULL && obj == player->equip) {
 		player->equip = NULL;
 		printf("You unequipped the %s.\n", obj->desc);
 		return;
@@ -142,7 +147,7 @@ void exec_unequip(const char *noun, const char *target) {
 
 void exec_grab(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(obj->loc == player->loc) {
+	if(obj != NULL && obj->loc == player->loc) {
 		grab_object(obj);
 		return;
 	}
@@ -151,18 +156,17 @@ void exec_grab(const char *noun, const char *target) {
 
 void exec_drop(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(obj->loc == player && obj != player->equip) {
+	if(obj != NULL && obj->loc == player && obj != player->equip) {
 		drop_object(obj);
 		return;
 	}
-	else if(obj == player->equip) {
+	else if(obj != NULL && obj == player->equip) {
 		exec_unequip(noun, target);
 		drop_object(obj);
 		return;
 	}
 	printf("You have no %s to drop.\n", noun);
 }
-
 
 typedef void (*command_func)(const char *noun, const char *target);
 
@@ -194,6 +198,7 @@ bool is_filler(const char *token) {
 		strcmp(token, "on") == 0 ||
 		strcmp(token, "into") == 0 ||
 		strcmp(token, "onto") == 0 ||
+		strcmp(token, "with") == 0 ||
 		strcmp(token, "out") == 0 ||
 		strcmp(token, "of") == 0 ||
 		strcmp(token, "a") == 0; 
