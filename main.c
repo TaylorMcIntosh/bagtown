@@ -15,37 +15,47 @@ static char input[100];
 typedef struct object {
 	const char *name;
 	const char *desc;
-	
+
 	struct object *loc;
-	struct object *north;
-	struct object *south;
-	struct object *east;
-	struct object *west;
+	struct object *dest;	
 
 	int weight;
 	int capacity;
 } object;
 
-#define player (objects + 0)
-#define cave   (objects + 1)
-#define field  (objects + 2)
-#define coin   (objects + 3)
-#define man    (objects + 4)
+#define player    (objects + 0)
+#define cave      (objects + 1)
+#define field     (objects + 2)
+#define coin      (objects + 3)
+#define man       (objects + 4)
+#define cave_entr (objects + 5)
+#define cave_exit (objects + 6)
 
-#define NUM_OBJ   (objects + 5)
+#define NUM_OBJ   (objects + 7)
 
 object objects[] = {
 	// PLAYER
-	{"player", "player", field, NULL, NULL, NULL, NULL, 100, 20},
+	{"player"   , "player"          , field, NULL, 100, 20},
 	// MAP
-	{"cave", "A small cavern", NULL, NULL, field, NULL, NULL, 9999, 9999},
-	{"field", "An open field", NULL, cave, NULL, NULL, NULL, 9999, 9999},
+	{"cave"     , "A small cavern"  , NULL, NULL, 9999, 9999},
+	{"field"    , "An open field"   , NULL, NULL, 9999, 9999},
 	// ITEMS
-	{"coin", "A golden coin", cave, NULL, NULL, NULL, NULL, 1, 0},
+	{"coin"     , "A golden coin"   , cave, NULL, 1, 0},
 	// PEOPLE
-	{"man", "A grumpy old man", field, NULL, NULL, NULL, NULL, 90, 20},
+	{"man"      , "A grumpy old man", field, NULL, 90, 20},
+	// PASSAGES
+	{"cave_entr", "A cave entrance" , field, cave, 9999, 9999},
+	{"cave_exit", "A cave exit"     , cave, field, 9999, 9999},
 };
 
+object *get_object(const char *noun) {
+	object *obj;
+	for (obj = objects; obj < NUM_OBJ; obj++) {
+		if(strcmp(noun, obj->name) == 0)
+			return obj;
+	}
+	return NULL;
+}
 
 bool check_loc(const char *noun, object *obj, object *target_loc) {
 	return strcmp(noun, obj->name) == 0 && obj->loc == target_loc;
@@ -80,6 +90,17 @@ void drop_object(object *obj) {
 	player->capacity += obj->weight;
 	printf("You dropped %s.\n", obj->desc);
 }
+
+object *get_passage(object *from, object *to) {
+	if(from != NULL && to != NULL) {
+		object *obj;
+		for(obj = objects; obj < NUM_OBJ; obj++) {
+			if(obj->loc == from && obj->dest == to)
+				return obj;
+		}
+	}
+	return NULL;
+}
 // }}}
 
 // COMMANDS {{{
@@ -97,18 +118,9 @@ void exec_look(const char *noun, const char *target) {
 }
 
 void exec_move(const char *noun, const char *target) {
-	if (strcmp(noun, "north") == 0 && player->loc->north != NULL)
-		player->loc = player->loc->north;
-	else if (strcmp(noun, "south") == 0 && player->loc->south != NULL)
-		player->loc = player->loc->south;
-	else if (strcmp(noun, "east") == 0 && player->loc->east != NULL)
-		player->loc = player->loc->east;
-	else if (strcmp(noun, "west") == 0 && player->loc->west != NULL)
-		player->loc = player->loc->west;
-	else {
-		printf("There is nothing of note %s of here.\n", noun);
-		return;
-	}
+	object *obj = get_object(noun);
+	if(get_passage(player->loc, obj) != NULL)
+		player->loc = obj;
 	exec_look("around", "");
 }
 
@@ -160,6 +172,8 @@ bool is_filler(const char *token) {
 		strcmp(token, "on") == 0 ||
 		strcmp(token, "into") == 0 ||
 		strcmp(token, "onto") == 0 ||
+		strcmp(token, "out") == 0 ||
+		strcmp(token, "of") == 0 ||
 		strcmp(token, "a") == 0; 
 }
 
