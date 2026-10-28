@@ -57,10 +57,6 @@ object *get_object(const char *noun) {
 	return NULL;
 }
 
-bool check_loc(object *obj, object *target_loc) {
-	return obj->loc == target_loc;
-}
-
 void list_objects(object *loc) {
 	object *obj;
 	printf("You see:\n");
@@ -90,8 +86,6 @@ void drop_object(object *obj) {
 	player->capacity += obj->weight;
 	printf("You dropped %s.\n", obj->desc);
 }
-
-
 
 object *get_passage(object *from, object *to) {
 	if(from != NULL && to != NULL) {
@@ -128,7 +122,7 @@ void exec_move(const char *noun, const char *target) {
 
 void exec_grab(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(check_loc(obj, player->loc)) {
+	if(obj->loc == player->loc) {
 		grab_object(obj);
 		return;
 	}
@@ -137,7 +131,7 @@ void exec_grab(const char *noun, const char *target) {
 
 void exec_drop(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(check_loc(obj, player)) {
+	if(obj->loc == player) {
 		drop_object(obj);
 		return;
 	}
