@@ -11,7 +11,7 @@
 static bool is_playing = true;
 static char input[100];
 
-// TODO : contents [ preface list_objects ], fill [ fills a container with given object ],
+// TODO : fill [ fills a container with given object ],
 //	  empty [ empties a container into location ], talk [ talk to sentient object (health>0 || animated) ],
 //	  give [ gives object to sentient object ]
 
@@ -26,7 +26,8 @@ typedef struct object {
 	struct object *dest;	
 
 	struct object *equip;
-
+	
+	int health;
 	int weight;
 	int capacity;
 } object;
@@ -36,29 +37,32 @@ typedef struct object {
 #define field     (objects + 2)
 #define vial      (objects + 3)
 #define coin      (objects + 4)
-#define man       (objects + 5)
-#define cave_entr (objects + 6)
-#define cave_exit (objects + 7)
+#define crate     (objects + 5)
+#define man       (objects + 6)
+#define cave_entr (objects + 7)
+#define cave_exit (objects + 8)
 
-#define NUM_OBJ   (objects + 8)
+#define NUM_OBJ   (objects + 9)
 
 object objects[] = {
 	// PLAYER
-	{"player"   , "player"          , "You have ", "", field, NULL, NULL, 100, 20},
+	{"player"   , "player"          , "You have ", "", field, NULL, NULL, 20, 100, 20},
 	// MAP
-	{"cave"     , "a small cavern"  , "You see ", "", NULL, NULL, NULL, 9999, 9999},
-	{"field"    , "an open field"   , "You see", "", NULL, NULL, NULL, 9999, 9999},
+	{"cave"     , "a small cavern"  , "You see ", "", NULL, NULL, NULL, 0, 9999, 9999},
+	{"field"    , "an open field"   , "You see", "", NULL, NULL, NULL, 0, 9999, 9999},
 	// ITEMS
-	{"vial"     , "a glass vial"    , "It's filled with ", "", cave, NULL, NULL, 1, 1},
-	{"coin"     , "a golden coin"   , "", "", man, NULL, NULL, 1, 0},
+	{"vial"     , "a glass vial"    , "It's filled with ", "", crate, NULL, NULL, 0, 1, 1},
+	{"coin"     , "a golden coin"   , "", "", man, NULL, NULL, 0, 1, 0},
+	{"crate"    , "a wooden crate"  , "It's filled with ", "", cave, NULL, NULL, 0, 25, 20},
 	// PEOPLE
-	{"man"      , "a grumpy old man", "They have ", "", field, NULL, NULL, 90, 20},
+	{"man"      , "a grumpy old man", "They have ", "", field, NULL, NULL, 20, 90, 20},
 	// PASSAGES
-	{"cave_entr", "a cave entrance" , "", "", field, cave, NULL, 9999, 9999},
-	{"cave_exit", "a cave exit"     , "", "", cave, field, NULL, 9999, 9999},
+	{"cave_entr", "a cave entrance" , "", "", field, cave, NULL, 0, 9999, 9999},
+	{"cave_exit", "a cave exit"     , "", "", cave, field, NULL, 0, 9999, 9999},
 };
 
 object *get_object(const char *noun) {
+	if(noun == NULL) return NULL;
 	object *obj;
 	for (obj = objects; obj < NUM_OBJ; obj++)
 		if(strcmp(noun, obj->name) == 0) return obj;
@@ -85,9 +89,9 @@ void grab_object(object *obj) {
 		printf("%s is too heavy for you to pick up.\n", obj->desc);
 		return;
 	}
+	printf("You grabbed %s from %s.\n", obj->desc, obj->loc->desc);
 	obj->loc = player;
 	player->capacity -= obj->weight;
-	printf("You picked up %s.\n", obj->desc);
 }
 
 void drop_object(object *obj) {
@@ -136,7 +140,7 @@ void exec_move(const char *noun, const char *target) {
 	object *obj = get_object(noun);
 	if(obj != NULL && get_passage(player->loc, obj) != NULL)
 		player->loc = obj;
-	exec_look("around", "");
+	exec_look(player->loc->name, "");
 }
 
 void exec_equip(const char *noun, const char *target) {
@@ -161,8 +165,18 @@ void exec_unequip(const char *noun, const char *target) {
 
 void exec_grab(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(obj != NULL && obj->loc == player->loc) {
+	object *tar = get_object(target);
+	if(obj == NULL) return;
+	else if(obj->loc == player->loc || tar == NULL) {
 		grab_object(obj);
+		return;
+	}
+	else if(obj->loc == tar && tar->health == 0) {
+		grab_object(obj);
+		return;
+	}
+	else if(obj->loc == tar && tar->health > 0) {
+		printf("no.\n");
 		return;
 	}
 	printf("There is no %s here.\n", noun);
@@ -213,6 +227,7 @@ bool is_filler(const char *token) {
 		strcmp(token, "on") == 0 ||
 		strcmp(token, "into") == 0 ||
 		strcmp(token, "onto") == 0 ||
+		strcmp(token, "from") == 0 ||
 		strcmp(token, "with") == 0 ||
 		strcmp(token, "out") == 0 ||
 		strcmp(token, "of") == 0 ||
