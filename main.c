@@ -30,35 +30,40 @@ typedef struct object {
 	int health;
 	int weight;
 	int capacity;
+
+	bool is_liquid;
+	bool holds_liquid;
 } object;
 
-#define player    (objects + 0)
-#define cave      (objects + 1)
-#define field     (objects + 2)
-#define vial      (objects + 3)
-#define coin      (objects + 4)
-#define crate     (objects + 5)
-#define man       (objects + 6)
-#define cave_entr (objects + 7)
-#define cave_exit (objects + 8)
+#define player     (objects + 0)
+#define cave       (objects + 1)
+#define field      (objects + 2)
+#define vial       (objects + 3)
+#define coin       (objects + 4)
+#define crate      (objects + 5)
+#define water      (objects + 6)
+#define man        (objects + 7)
+#define cave_entr  (objects + 8)
+#define cave_exit  (objects + 9)
 
-#define NUM_OBJ   (objects + 9)
+#define NUM_OBJ   (objects + 10)
 
 object objects[] = {
 	// PLAYER
-	{"player"   , "player"          , "You have ", "", field, NULL, NULL, 20, 100, 20},
+	{"player"   , "player"              , "You have " 	  , "", field, NULL, NULL, 20, 100, 20, false, false},
 	// MAP
-	{"cave"     , "a small cavern"  , "You see ", "", NULL, NULL, NULL, 0, 9999, 9999},
-	{"field"    , "an open field"   , "You see", "", NULL, NULL, NULL, 0, 9999, 9999},
+	{"cave"     , "a small cavern"      , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, false},
+	{"field"    , "an open field"       , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, false},
 	// ITEMS
-	{"vial"     , "a glass vial"    , "It's filled with ", "", crate, NULL, NULL, 0, 1, 1},
-	{"coin"     , "a golden coin"   , "", "", man, NULL, NULL, 0, 1, 0},
-	{"crate"    , "a wooden crate"  , "It's filled with ", "", cave, NULL, NULL, 0, 25, 20},
+	{"vial"     , "a glass vial"        , "It's filled with " , "", crate, NULL, NULL, 0, 1, 1, false, true},
+	{"coin"     , "a golden coin"       , ""		  , "", man, NULL, NULL, 0, 1, 0, false, false},
+	{"crate"    , "a wooden crate"      , "It's filled with " , "", cave, NULL, NULL, 0, 20, 25, false, false},
+	{"water"    , "stagnant cave water" , ""		  , "", cave, NULL, NULL, 0, 1, 0, true, false},
 	// PEOPLE
-	{"man"      , "a grumpy old man", "They have ", "", field, NULL, NULL, 20, 90, 20},
+	{"man"      , "a grumpy old man"    , "They have "	  , "", field, NULL, NULL, 20, 90, 20, false, false},
 	// PASSAGES
-	{"cave_entr", "a cave entrance" , "", "", field, cave, NULL, 0, 9999, 9999},
-	{"cave_exit", "a cave exit"     , "", "", cave, field, NULL, 0, 9999, 9999},
+	{"cave_entr", "a cave entrance"     , ""		  , "", field, cave, NULL, 0, 9999, 9999, false, false},
+	{"cave_exit", "a cave exit"         , ""		  , "", cave, field, NULL, 0, 9999, 9999, false, false},
 };
 
 object *get_object(const char *noun) {
@@ -89,6 +94,10 @@ void grab_object(object *obj) {
 		printf("%s is too heavy for you to pick up.\n", obj->desc);
 		return;
 	}
+	else if(obj->is_liquid) {
+		printf("You need something to hold %s.\n", obj->desc);
+		return;
+	}
 	printf("You grabbed %s from %s.\n", obj->desc, obj->loc->desc);
 	obj->loc = player;
 	player->capacity -= obj->weight;
@@ -100,13 +109,18 @@ void drop_object(object *obj) {
 	printf("You dropped %s.\n", obj->desc);
 }
 
+void fill_object(object *obj, object *tar) {
+	tar->loc = obj;
+	obj->capacity -= tar->weight;
+	printf("You filled %s with %s.\n", obj->desc, tar->desc);
+}
+
 object *get_passage(object *from, object *to) {
-	if(from != NULL && to != NULL) {
-		object *obj;
-		for(obj = objects; obj < NUM_OBJ; obj++) {
-			if(obj->loc == from && obj->dest == to)
-				return obj;
-		}
+	if(from == NULL && to == NULL) return NULL;
+	object *obj;
+	for(obj = objects; obj < NUM_OBJ; obj++) {
+		if(obj->loc == from && obj->dest == to)
+			return obj;
 	}
 	return NULL;
 }
@@ -119,6 +133,20 @@ void exec_quit(const char *noun, const char *target) {
 
 void exec_inventory(const char *noun, const char *target) { 
 	list_objects(player); 
+}
+
+void exec_fill(const char *noun, const char *target) {
+	object *obj = get_object(noun);
+	object *tar = get_object(target);
+	if(obj->holds_liquid && tar->is_liquid) {
+		fill_object(obj, tar);	
+	}
+	else if(!obj->holds_liquid && !tar->is_liquid) {
+		fill_object(obj, tar);
+	}
+	else if(obj->holds_liquid && !tar->is_liquid) {
+		printf("%s cannot hold %s.\n", obj->desc, tar->desc);
+	}
 }
 
 void exec_look(const char *noun, const char *target) {
@@ -167,7 +195,7 @@ void exec_grab(const char *noun, const char *target) {
 	object *obj = get_object(noun);
 	object *tar = get_object(target);
 	if(obj == NULL) return;
-	else if(obj->loc == player->loc || tar == NULL) {
+	else if(obj->loc == player->loc && tar == NULL) {
 		grab_object(obj);
 		return;
 	}
@@ -208,7 +236,11 @@ static const command commands[] = {
 	{"look"		, exec_look},
 	{"examine"	, exec_look},
 	{"move"		, exec_move},
+	{"travel"	, exec_move},
+	{"go"		, exec_move},
 	{"grab"		, exec_grab},
+	{"get"		, exec_grab},
+	{"fill"		, exec_fill},
 	{"drop"		, exec_drop},
 	{"equip"	, exec_equip},
 	{"unequip"	, exec_unequip},
@@ -225,6 +257,7 @@ bool is_filler(const char *token) {
 	       	strcmp(token, "at") == 0 ||
 		strcmp(token, "in") == 0 ||
 		strcmp(token, "on") == 0 ||
+		strcmp(token, "to") == 0 ||
 		strcmp(token, "into") == 0 ||
 		strcmp(token, "onto") == 0 ||
 		strcmp(token, "from") == 0 ||
