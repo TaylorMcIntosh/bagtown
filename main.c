@@ -52,8 +52,8 @@ object objects[] = {
 	// PLAYER
 	{"player"   , "player"              , "You have " 	  , "", field, NULL, NULL, 20, 100, 20, false, false},
 	// MAP
-	{"cave"     , "a small cavern"      , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, false},
-	{"field"    , "an open field"       , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, false},
+	{"cave"     , "a small cavern"      , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, true},
+	{"field"    , "an open field"       , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, true},
 	// ITEMS
 	{"vial"     , "a glass vial"        , "It's filled with " , "", crate, NULL, NULL, 0, 1, 1, false, true},
 	{"coin"     , "a golden coin"       , ""		  , "", man, NULL, NULL, 0, 1, 0, false, false},
@@ -138,14 +138,30 @@ void exec_inventory(const char *noun, const char *target) {
 void exec_fill(const char *noun, const char *target) {
 	object *obj = get_object(noun);
 	object *tar = get_object(target);
-	if(obj->holds_liquid && tar->is_liquid) {
+	if(obj == NULL || tar == NULL) return;
+	if(obj->holds_liquid && tar->is_liquid && obj->capacity >= tar->weight) {
 		fill_object(obj, tar);	
 	}
-	else if(!obj->holds_liquid && !tar->is_liquid) {
+	else if(!obj->holds_liquid && !tar->is_liquid && obj->capacity >= tar->weight) {
 		fill_object(obj, tar);
 	}
 	else if(obj->holds_liquid && !tar->is_liquid) {
 		printf("%s cannot hold %s.\n", obj->desc, tar->desc);
+	}
+}
+
+void exec_empty(const char *noun, const char *target) {
+	object *obj = get_object(noun);
+	object *obj2;
+	if(obj != NULL && obj->loc == player) {
+		printf("You have emptied: \n");
+		for(obj2 = objects; obj2 < NUM_OBJ; obj2++) {
+			if(obj == obj2->loc) {
+				obj2->loc = player->loc;
+				printf("%s\n", obj2->desc);
+			}
+		}
+		printf("From %s onto the floor of %s.\n", obj->desc, player->loc->desc);
 	}
 }
 
@@ -242,6 +258,7 @@ static const command commands[] = {
 	{"get"		, exec_grab},
 	{"fill"		, exec_fill},
 	{"drop"		, exec_drop},
+	{"empty"	, exec_empty},
 	{"equip"	, exec_equip},
 	{"unequip"	, exec_unequip},
 	{"inventory"	, exec_inventory},
