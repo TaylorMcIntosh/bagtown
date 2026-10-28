@@ -20,6 +20,7 @@ typedef struct object {
 	const char *name;
 	const char *desc;
 	const char *content;
+	const char *details;
 	
 	struct object *loc;
 	struct object *dest;	
@@ -43,18 +44,18 @@ typedef struct object {
 
 object objects[] = {
 	// PLAYER
-	{"player"   , "player"          , "You have ", field, NULL, NULL, 100, 20},
+	{"player"   , "player"          , "You have ", "", field, NULL, NULL, 100, 20},
 	// MAP
-	{"cave"     , "a small cavern"  , "You see ", NULL, NULL, NULL, 9999, 9999},
-	{"field"    , "an open field"   , "You see", NULL, NULL, NULL, 9999, 9999},
+	{"cave"     , "a small cavern"  , "You see ", "", NULL, NULL, NULL, 9999, 9999},
+	{"field"    , "an open field"   , "You see", "", NULL, NULL, NULL, 9999, 9999},
 	// ITEMS
-	{"vial"     , "a glass vial"    , "It's filled with ", cave, NULL, NULL, 1, 1},
-	{"coin"     , "a golden coin"   , "", man, NULL, NULL, 1, 0},
+	{"vial"     , "a glass vial"    , "It's filled with ", "", cave, NULL, NULL, 1, 1},
+	{"coin"     , "a golden coin"   , "", "", man, NULL, NULL, 1, 0},
 	// PEOPLE
-	{"man"      , "a grumpy old man", "They have ", field, NULL, NULL, 90, 20},
+	{"man"      , "a grumpy old man", "They have ", "", field, NULL, NULL, 90, 20},
 	// PASSAGES
-	{"cave_entr", "a cave entrance" , "", field, cave, NULL, 9999, 9999},
-	{"cave_exit", "a cave exit"     , "", cave, field, NULL, 9999, 9999},
+	{"cave_entr", "a cave entrance" , "", "", field, cave, NULL, 9999, 9999},
+	{"cave_exit", "a cave exit"     , "", "", cave, field, NULL, 9999, 9999},
 };
 
 object *get_object(const char *noun) {
@@ -67,7 +68,7 @@ object *get_object(const char *noun) {
 
 void list_objects(object *loc) {
 	object *obj;
-	printf("%s\n", loc->content);
+	printf("%s:\n", loc->content);
 	for (obj = objects; obj < NUM_OBJ; obj++) {
 		if (obj->loc == loc && obj != player)
 			printf("%s\n", obj->desc);
@@ -117,8 +118,18 @@ void exec_inventory(const char *noun, const char *target) {
 }
 
 void exec_look(const char *noun, const char *target) {
-	if(strcmp(noun, "around") == 0) look_around(player->loc);
-	else printf("I do not understand what you wish to see.\n");
+	object *obj = get_object(noun);
+	if(strcmp(noun, "around") == 0 || obj == player->loc) {
+		look_around(player->loc);
+		return;
+	}
+	else if(obj->loc == player->loc || obj->loc == player) {
+		if(obj == NULL) return;
+		printf("%s\n", obj->details);
+		list_objects(obj);
+		return;
+	}
+	printf("There is no %s here.\n", noun);
 }
 
 void exec_move(const char *noun, const char *target) {
@@ -181,6 +192,7 @@ typedef struct {
 static const command commands[] = {
 	{"quit"		, exec_quit},
 	{"look"		, exec_look},
+	{"examine"	, exec_look},
 	{"move"		, exec_move},
 	{"grab"		, exec_grab},
 	{"drop"		, exec_drop},
