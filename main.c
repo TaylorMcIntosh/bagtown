@@ -11,8 +11,8 @@
 static bool is_playing = true;
 static char input[100];
 
-// TODO : fill [ fills a container with given object ],
-//	  empty [ empties a container into location ], talk [ talk to sentient object (health>0 || animated) ],
+// TODO : 
+//	  talk [ talk to sentient object (health>0 || animated) ],
 //	  give [ gives object to sentient object ]
 
 // OBJECTS {{{
@@ -21,10 +21,11 @@ typedef struct object {
 	const char *desc;
 	const char *content;
 	const char *details;
+	const char *text_go;
 	
 	struct object *loc;
-	struct object *dest;	
-
+	struct object *dest;
+	struct object *prop;	
 	struct object *equip;
 	
 	int health;
@@ -33,6 +34,7 @@ typedef struct object {
 
 	bool is_liquid;
 	bool holds_liquid;
+	bool (*exists)(void);
 } object;
 
 #define player     (objects + 0)
@@ -44,28 +46,128 @@ typedef struct object {
 #define water      (objects + 6)
 #define man        (objects + 7)
 #define cave_entr  (objects + 8)
-#define cave_exit  (objects + 9)
+#define cave_blkd  (objects + 9)
+#define cave_exit  (objects + 10)
 
-#define NUM_OBJ   (objects + 10)
+#define NUM_OBJ    (objects + 11)
+
+bool always_true(void) { return true; }
 
 object objects[] = {
 	// PLAYER
-	{"player"   , "player"              , "You have " 	  , "", field, NULL, NULL, 20, 100, 20, false, false},
+	{"player"   
+	,"player"
+	,"You have "
+	,""
+	,""
+	, field, NULL, NULL, NULL
+	, 20, 100, 20
+	, false, false, always_true
+	},
 	// MAP
-	{"cave"     , "a small cavern"      , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, true},
-	{"field"    , "an open field"       , "You see "  	  , "", NULL, NULL, NULL, 0, 9999, 9999, false, true},
-	// ITEMS
-	{"vial"     , "a glass vial"        , "It's filled with " , "", crate, NULL, NULL, 0, 1, 1, false, true},
-	{"coin"     , "a golden coin"       , ""		  , "", man, NULL, NULL, 0, 1, 0, false, false},
-	{"crate"    , "a wooden crate"      , "It's filled with " , "", cave, NULL, NULL, 0, 20, 25, false, false},
-	{"water"    , "stagnant cave water" , ""		  , "", cave, NULL, NULL, 0, 1, 0, true, false},
-	// PEOPLE
-	{"man"      , "a grumpy old man"    , "They have "	  , "", field, NULL, NULL, 20, 90, 20, false, false},
-	// PASSAGES
-	{"cave_entr", "a cave entrance"     , ""		  , "", field, cave, NULL, 0, 9999, 9999, false, false},
-	{"cave_exit", "a cave exit"         , ""		  , "", cave, field, NULL, 0, 9999, 9999, false, false},
-};
+	{"cave"     
+	,"a small cavern"      
+	,"You see "  	  
+	,""
+	,""
+	, NULL, NULL, NULL, NULL
+	, 0, 9999, 9999
+	, false, true, always_true
+	},
 
+	{"field"    
+	,"an open field"       
+	,"You see "  	  
+	,""
+	,""
+	, NULL, NULL, NULL, NULL
+	, 0, 9999, 9999
+	, false, true, always_true	
+	},
+	// ITEMS
+	{"vial"     
+	,"a glass vial"        
+	,"It's filled with " 
+	,""
+	,""
+	, crate, NULL, NULL, NULL
+	, 0, 1, 1
+	, false, true, always_true 
+	},
+	
+	{"coin"     
+	,"a golden coin"       
+	,""		  
+	,""
+	,""
+	, man, NULL, NULL, NULL
+	, 0, 1, 0
+	, false, false, always_true
+	},
+	
+	{"crate"    
+	,"a wooden crate"      
+	,"It's filled with " 
+	,""
+	,""
+	, cave, NULL, NULL, NULL
+	, 0, 20, 25
+	, false, false, always_true
+	},
+	
+	{"water"    
+	,"stagnant cave water" 
+	,""		  
+	,""
+	,""
+	, cave, NULL, NULL, NULL
+	, 0, 1, 0
+	, true, false, always_true
+	},
+	// PEOPLE
+	{"man"      
+	,"a grumpy old man"    
+	,"They have "	  
+	,""
+	,""
+	, field, NULL, NULL, NULL
+	, 20, 90, 20
+	, false, false, always_true
+	},
+	// PASSAGES
+	{"cave_entr"
+	,"a cave entrance"     
+	,""		  
+	,""
+	,"You walk into the cave.\n"
+	, field, cave, NULL, NULL
+	, 0, 9999, 9999
+	, false, false, always_true
+	},
+	
+	{"cave_blkd"
+	,"a cave entrance"     
+	,""		  
+	,""
+	,"The cave is blocked by the old man.\n"
+	, NULL, NULL, cave, NULL
+	, 0, 9999, 9999
+	, false, false, always_true
+	},
+
+	{"cave_exit"
+	,"a cave exit"         
+	,""		  
+	,""
+	,"You exit the cave.\n"
+	, cave, field, NULL, NULL
+	, 0, 9999, 9999
+	, false, false, always_true
+	},
+};
+// }}}
+
+// MISC {{{
 object *get_object(const char *noun) {
 	if(noun == NULL) return NULL;
 	object *obj;
@@ -124,6 +226,16 @@ object *get_passage(object *from, object *to) {
 	}
 	return NULL;
 }
+
+object *get_prop(object *from, object *to) {
+	if(from == NULL && to == NULL) return NULL;
+	object *obj;
+	for(obj = objects; obj < NUM_OBJ; obj++) {
+		if(obj->loc == from && obj->prop == to)
+			return obj;
+	}
+	return NULL;
+}
 // }}}
 
 // COMMANDS {{{
@@ -177,8 +289,12 @@ void exec_look(const char *noun, const char *target) {
 
 void exec_move(const char *noun, const char *target) {
 	object *obj = get_object(noun);
-	if(obj != NULL && get_passage(player->loc, obj) != NULL)
+	if(obj != NULL && get_passage(player->loc, obj) != NULL) {
+		printf("%s\n", get_passage(player->loc, obj)->text_go);
 		player->loc = obj;
+	}
+	if(obj != NULL && get_prop(player->loc, obj) != NULL)
+		printf("%s\n", get_prop(player->loc, obj)->text_go);
 	exec_look(player->loc->name, "");
 }
 
