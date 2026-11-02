@@ -22,7 +22,8 @@ typedef struct object {
 	const char *content;
 	const char *details;
 	const char *text_go;
-	
+	const char *dialogue;
+
 	struct object *loc;
 	struct object *dest;
 	struct object *prop;
@@ -63,6 +64,7 @@ object objects[] = {
 	,"You have "
 	,""
 	,""
+	,""
 	, field, NULL, NULL, NULL, NULL
 	, 20, 100, 20
 	, false, false, always_true
@@ -71,6 +73,7 @@ object objects[] = {
 	{"cave"     
 	,"a small cavern"      
 	,"You see "  	  
+	,""
 	,""
 	,""
 	, NULL, NULL, NULL, NULL, NULL
@@ -83,6 +86,7 @@ object objects[] = {
 	,"You see "  	  
 	,""
 	,""
+	,""
 	, NULL, NULL, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, true, always_true	
@@ -91,6 +95,7 @@ object objects[] = {
 	{"vial"     
 	,"a glass vial"        
 	,"It's filled with " 
+	,""
 	,""
 	,""
 	, crate, NULL, NULL, NULL, NULL
@@ -103,6 +108,7 @@ object objects[] = {
 	,""		  
 	,""
 	,""
+	,""
 	, field, NULL, NULL, NULL, NULL
 	, 0, 1, 0
 	, false, false, always_true
@@ -111,6 +117,7 @@ object objects[] = {
 	{"crate"    
 	,"a wooden crate"      
 	,"It's filled with " 
+	,""
 	,""
 	,""
 	, cave, NULL, NULL, NULL, NULL
@@ -123,6 +130,7 @@ object objects[] = {
 	,""		  
 	,""
 	,""
+	,""
 	, cave, NULL, NULL, NULL, NULL
 	, 0, 1, 0
 	, true, false, always_true
@@ -133,6 +141,7 @@ object objects[] = {
 	,"They have "	  
 	,""
 	,""
+	,"'This is a conversation' asks the old man"
 	, field, NULL, NULL, NULL, coin
 	, 20, 90, 20
 	, false, false, always_true
@@ -143,6 +152,7 @@ object objects[] = {
 	,""		  
 	,""
 	,"You walk into the cave.\n"
+	,""
 	, field, cave, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, cave_check_entr
@@ -153,6 +163,7 @@ object objects[] = {
 	,""		  
 	,""
 	,"The cave is blocked by the old man.\n"
+	,""
 	, field, NULL, cave, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, cave_check_blkd
@@ -163,6 +174,7 @@ object objects[] = {
 	,""		  
 	,""
 	,"You exit the cave.\n"
+	,""
 	, cave, field, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, always_true
@@ -382,6 +394,12 @@ void exec_give(const char *noun, const char *target) {
 		printf("'I do not want %s' says %s.\n", tar->desc, obj->desc); 
 }
 
+void exec_talk(const char *noun, const char *target) {
+	object *obj = get_object(noun);
+	if(obj == NULL) return;
+	else if(obj->health > 0 && obj->want->loc != obj) printf("%s.\n", obj->dialogue);
+}
+
 typedef void (*command_func)(const char *noun, const char *target);
 
 typedef struct {
@@ -391,6 +409,7 @@ typedef struct {
 
 static const command commands[] = {
 	{"quit"		, exec_quit},
+	{"talk"		, exec_talk},
 	{"look"		, exec_look},
 	{"examine"	, exec_look},
 	{"move"		, exec_move},
