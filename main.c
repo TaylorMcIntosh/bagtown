@@ -3,6 +3,7 @@
 // PURP :  main.c -> Bagtown Main File
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -52,6 +53,7 @@ typedef struct object {
 #define NUM_OBJ    (objects + 11)
 
 bool always_true(void) { return true; }
+bool cave_check(void) { return false; }
 
 object objects[] = {
 	// PLAYER
@@ -150,9 +152,9 @@ object objects[] = {
 	,""		  
 	,""
 	,"The cave is blocked by the old man.\n"
-	, NULL, NULL, cave, NULL
+	, field, NULL, cave, NULL
 	, 0, 9999, 9999
-	, false, false, always_true
+	, false, false, cave_check
 	},
 
 	{"cave_exit"
@@ -181,7 +183,7 @@ void list_objects(object *loc) {
 	object *obj;
 	printf("%s:\n", loc->content);
 	for (obj = objects; obj < NUM_OBJ; obj++) {
-		if (obj->loc == loc && obj != player)
+		if (obj->exists() && obj->loc == loc && obj != player)
 			printf("%s\n", obj->desc);
 	}
 }
