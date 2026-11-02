@@ -232,7 +232,7 @@ const char *read_desc(object *obj) {
 
     // OBJECT NAME
     strcat(str, " ");
-    char *ptr = strchr(obj->name, '_');
+    const char *ptr = strchr(obj->name, '_');
     if(ptr != NULL) {
         int len = ptr - obj->name;
         strncat(str, obj->name, len);
