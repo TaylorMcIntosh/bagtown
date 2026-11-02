@@ -52,8 +52,9 @@ typedef struct object {
 
 #define NUM_OBJ    (objects + 11)
 
-bool always_true(void) { return true; }
-bool cave_check(void) { return false; }
+bool always_true(void);
+bool cave_check_entr(void);
+bool cave_check_blkd(void);
 
 object objects[] = {
 	// PLAYER
@@ -102,7 +103,7 @@ object objects[] = {
 	,""		  
 	,""
 	,""
-	, man, NULL, NULL, NULL
+	, field, NULL, NULL, NULL
 	, 0, 1, 0
 	, false, false, always_true
 	},
@@ -113,7 +114,7 @@ object objects[] = {
 	,""
 	,""
 	, cave, NULL, NULL, NULL
-	, 0, 20, 25
+	, 0, 25, 20
 	, false, false, always_true
 	},
 	
@@ -144,7 +145,7 @@ object objects[] = {
 	,"You walk into the cave.\n"
 	, field, cave, NULL, NULL
 	, 0, 9999, 9999
-	, false, false, cave_check
+	, false, false, cave_check_entr
 	},
 	
 	{"cave_blkd"
@@ -154,7 +155,7 @@ object objects[] = {
 	,"The cave is blocked by the old man.\n"
 	, field, NULL, cave, NULL
 	, 0, 9999, 9999
-	, false, false, always_true
+	, false, false, cave_check_blkd
 	},
 
 	{"cave_exit"
@@ -167,6 +168,10 @@ object objects[] = {
 	, false, false, always_true
 	},
 };
+
+bool always_true(void) { return true; }
+bool cave_check_entr(void) { return coin->loc == man; }
+bool cave_check_blkd(void) { return coin->loc != man; }
 // }}}
 
 // MISC {{{
@@ -217,6 +222,12 @@ void fill_object(object *obj, object *tar) {
 	tar->loc = obj;
 	obj->capacity -= tar->weight;
 	printf("You filled %s with %s.\n", obj->desc, tar->desc);
+}
+
+void give_object(object *obj, object *tar) {
+	obj->loc = tar;
+	tar->capacity -= obj->weight;
+	printf("You gave %s %s.\n", tar->desc, obj->desc);
 }
 
 object *get_passage(object *from, object *to) {
@@ -357,6 +368,14 @@ void exec_drop(const char *noun, const char *target) {
 	printf("You have no %s to drop.\n", noun);
 }
 
+void exec_give(const char *noun, const char *target) {
+	object *obj = get_object(noun);
+	object *tar = get_object(target);
+	if (obj == NULL || tar == NULL) return;
+	else if(obj->loc == player && tar->health > 0) give_object(obj, tar);
+	else if(tar->loc == player && obj->health > 0) give_object(tar, obj);
+}
+
 typedef void (*command_func)(const char *noun, const char *target);
 
 typedef struct {
@@ -373,6 +392,7 @@ static const command commands[] = {
 	{"go"		, exec_move},
 	{"grab"		, exec_grab},
 	{"get"		, exec_grab},
+	{"give"		, exec_give},
 	{"fill"		, exec_fill},
 	{"drop"		, exec_drop},
 	{"empty"	, exec_empty},
