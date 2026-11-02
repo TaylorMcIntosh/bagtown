@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "color.h"
+
 #define MAX_WORDS 8
 
 static bool is_playing = true;
@@ -18,7 +20,7 @@ static char input[100];
 //	  Order of adjectives -> Rework how descriptions work
 
 // ADJECTIVES {{{
-
+// OPINION, SIZE, PHYS QUALITY, SHAPE, AGE, COLOR, ORIGIN, MATERIAL, TYPE, PURPOSE
 // }}}
 
 // OBJECTS {{{
