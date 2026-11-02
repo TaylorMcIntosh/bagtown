@@ -512,7 +512,6 @@ bool is_filler(const char *token) {
 }
 
 static void handle_input(char *input) {
-    
     char *words[MAX_WORDS] = {NULL};
     int word_count = 0;
     
@@ -521,6 +520,8 @@ static void handle_input(char *input) {
         if (!is_filler(token)) words[word_count++] = token;
         token = strtok(NULL, " \n");
     }
+
+    if(word_count == 0 || words[0] == NULL) return;
 
     for(size_t i = 0; i < NUM_CMD; i++) {
         if(strcmp(words[0], commands[i].name) == 0) {
