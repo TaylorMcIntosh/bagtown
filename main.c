@@ -2,9 +2,11 @@
 // DATE :  2026-10-25
 // PURP :  main.c -> Bagtown Main File
 
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 #include "color.h"
@@ -13,6 +15,8 @@
 
 static bool is_playing = true;
 static char input[100];
+
+int roll_dice(int amt, int side);
 
 // TODO : 
 //    talk [ talk to sentient object (health > 0 || animated) ],
@@ -30,7 +34,7 @@ typedef struct opinion {
     const char *color;
 } opinion;
 
-const opinion opinions[] = {
+opinion opinions[] = {
     {0,  "null", RED},
     {1,  "", RESET},
     {2,  "vulgar ", RESET},
@@ -56,7 +60,7 @@ typedef struct object {
     const char *text_go;
     const char *dialogue;
 
-    struct opinion opinion;
+    struct opinion *opinion;
 
     struct object *loc;
     struct object *dest;
@@ -101,7 +105,7 @@ object objects[] = {
     ,""
     ,""
     ,""
-    , opinions[0]
+    , opinions
     , field, NULL, NULL, NULL, NULL
     , 20, 100, 20
     , false, false, always_true
@@ -113,7 +117,7 @@ object objects[] = {
     ,""
     ,""
     ,""
-    , opinions[0]
+    , opinions
     , NULL, NULL, NULL, NULL, NULL
     , 0, 9999, 9999
     , false, true, always_true
@@ -125,7 +129,7 @@ object objects[] = {
     ,""
     ,""
     ,""
-    , opinions[0]
+    , opinions
     , NULL, NULL, NULL, NULL, NULL
     , 0, 9999, 9999
     , false, true, always_true  
@@ -137,7 +141,7 @@ object objects[] = {
     ,""
     ,""
     ,""
-    , opinions[0]
+    , opinions
     , crate, NULL, NULL, NULL, NULL
     , 0, 1, 1
     , false, true, always_true 
@@ -149,7 +153,7 @@ object objects[] = {
     ,""
     ,""
     ,""
-    , opinions[0]
+    , opinions
     , field, NULL, NULL, NULL, NULL
     , 0, 1, 0
     , false, false, always_true
@@ -161,7 +165,7 @@ object objects[] = {
     ,""
     ,""
     ,""
-    , opinions[0]
+    , opinions
     , cave, NULL, NULL, NULL, NULL
     , 0, 25, 20
     , false, false, always_true
@@ -173,7 +177,7 @@ object objects[] = {
     ,""
     ,""
     ,""
-    , opinions[0]
+    , opinions
     , cave, NULL, NULL, NULL, NULL
     , 0, 1, 0
     , true, false, always_true
@@ -184,8 +188,8 @@ object objects[] = {
     ,"They have "     
     ,""
     ,""
-    ,"'This is a conversation' asks the old man"
-    , opinions[0]
+    ,"'This is a conversation' says the man"
+    , opinions
     , field, NULL, NULL, NULL, coin
     , 20, 90, 20
     , false, false, always_true
@@ -197,7 +201,7 @@ object objects[] = {
     ,""
     ,"You walk into the cave.\n"
     ,""
-    , opinions[0]
+    , opinions
     , field, cave, NULL, NULL, NULL
     , 0, 9999, 9999
     , false, false, cave_check_entr
@@ -207,9 +211,9 @@ object objects[] = {
     , read_desc
     ,""       
     ,""
-    ,"The cave is blocked by the old man.\n"
+    ,"The cave is blocked by the man.\n"
     ,""
-    , opinions[0]
+    , opinions
     , field, NULL, cave, NULL, NULL
     , 0, 9999, 9999
     , false, false, cave_check_blkd
@@ -221,7 +225,7 @@ object objects[] = {
     ,""
     ,"You exit the cave.\n"
     ,""
-    , opinions[0]
+    , opinions
     , cave, field, NULL, NULL, NULL
     , 0, 9999, 9999
     , false, false, always_true
@@ -236,10 +240,9 @@ const char *read_desc(object *obj) {
     strcat(str, " ");
 
     // OPINION
-    if(obj->opinion.id != 0) {
-        strcat(str, obj->opinion.color);
-        strncat(str, obj->opinion.value, strlen(obj->opinion.value));
-        strcat(str, RESET);
+    if(obj->opinion != NULL || obj->opinion->id != 0) {
+        strcat(str, obj->opinion->color);
+        strcat(str, obj->opinion->value);
     }
 
     // OBJECT NAME
@@ -247,7 +250,7 @@ const char *read_desc(object *obj) {
     if(ptr != NULL) {
         int len = ptr - obj->name;
         strncat(str, obj->name, len);
-    } else strncat(str, obj->name, sizeof(obj->name));
+    } else strcat(str, obj->name);
     return str;
 }
 
@@ -264,6 +267,17 @@ object *get_object(const char *noun) {
         if(strcmp(noun, obj->name) == 0) return obj;
     printf("I do not know what a '%s' is.\n", noun);
     return NULL;
+}
+
+int roll_dice(int amt, int side) {
+	int roll = 0;
+	for (int i = 0; i < amt; i++) roll += (rand() % side + 1);
+	return roll;
+}
+
+void init_object(object *obj) {
+	if(obj->opinion->id == 0 || obj->opinion == NULL) 
+		obj->opinion = &opinions[roll_dice(2, 6)];
 }
 
 void list_objects(object *loc) {
@@ -552,6 +566,10 @@ static void game_loop() {
 }
 
 int main(int argc, char *argv[]) {
+    object *obj;
+    srand(time(NULL));
+    for(obj = objects; obj < NUM_OBJ; obj++) init_object(obj);
+    
     look_around(player->loc);
     while(is_playing) { game_loop(); }
     return 0;
