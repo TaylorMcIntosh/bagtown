@@ -17,10 +17,14 @@ static char input[100];
 //	  attack [ attacks a sentient object (health > 0 || animated) ]
 //	  Order of adjectives -> Rework how descriptions work
 
+// ADJECTIVES {{{
+
+// }}}
+
 // OBJECTS {{{
 typedef struct object {
 	const char *name;
-	const char *desc;
+	const char *(*desc)(struct object *obj);
 	const char *content;
 	const char *details;
 	const char *text_go;
@@ -55,6 +59,8 @@ typedef struct object {
 
 #define NUM_OBJ    (objects + 11)
 
+const char *read_desc(struct object *obj);
+
 bool always_true(void);
 bool cave_check_entr(void);
 bool cave_check_blkd(void);
@@ -62,7 +68,7 @@ bool cave_check_blkd(void);
 object objects[] = {
 	// PLAYER
 	{"player"   
-	,"player"
+	, read_desc
 	,"You have "
 	,""
 	,""
@@ -73,7 +79,7 @@ object objects[] = {
 	},
 	// MAP
 	{"cave"     
-	,"a small cavern"      
+	, read_desc      
 	,"You see "  	  
 	,""
 	,""
@@ -84,7 +90,7 @@ object objects[] = {
 	},
 
 	{"field"    
-	,"an open field"       
+	, read_desc
 	,"You see "  	  
 	,""
 	,""
@@ -95,7 +101,7 @@ object objects[] = {
 	},
 	// ITEMS
 	{"vial"     
-	,"a glass vial"        
+	, read_desc
 	,"It's filled with " 
 	,""
 	,""
@@ -106,7 +112,7 @@ object objects[] = {
 	},
 	
 	{"coin"     
-	,"a golden coin"       
+	, read_desc
 	,""		  
 	,""
 	,""
@@ -117,7 +123,7 @@ object objects[] = {
 	},
 	
 	{"crate"    
-	,"a wooden crate"      
+	, read_desc
 	,"It's filled with " 
 	,""
 	,""
@@ -128,7 +134,7 @@ object objects[] = {
 	},
 	
 	{"water"    
-	,"stagnant cave water" 
+	, read_desc
 	,""		  
 	,""
 	,""
@@ -139,7 +145,7 @@ object objects[] = {
 	},
 	// PEOPLE
 	{"man"      
-	,"a grumpy old man"    
+	, read_desc
 	,"They have "	  
 	,""
 	,""
@@ -150,7 +156,7 @@ object objects[] = {
 	},
 	// PASSAGES
 	{"cave_entr"
-	,"a cave entrance"     
+	, read_desc
 	,""		  
 	,""
 	,"You walk into the cave.\n"
@@ -161,7 +167,7 @@ object objects[] = {
 	},
 	
 	{"cave_blkd"
-	,"a cave entrance"     
+	, read_desc
 	,""		  
 	,""
 	,"The cave is blocked by the old man.\n"
@@ -172,7 +178,7 @@ object objects[] = {
 	},
 
 	{"cave_exit"
-	,"a cave exit"         
+	, read_desc
 	,""		  
 	,""
 	,"You exit the cave.\n"
@@ -182,6 +188,10 @@ object objects[] = {
 	, false, false, always_true
 	},
 };
+
+const char *read_desc(object *obj) {
+	return obj->name;
+}
 
 bool always_true(void) { return true; }
 bool cave_check_entr(void) { return coin->loc == man; }
@@ -203,25 +213,25 @@ void list_objects(object *loc) {
 	printf("%s:\n", loc->content);
 	for (obj = objects; obj < NUM_OBJ; obj++) {
 		if (obj->exists() && obj->loc == loc && obj != player)
-			printf("%s\n", obj->desc);
+			printf("%s\n", obj->desc(obj));
 	}
 }
 
 void look_around(object *loc) {
-	printf("You are in %s\n", loc->desc);
+	printf("You are in %s\n", loc->desc(loc));
 	list_objects(loc);
 }
 
 void grab_object(object *obj) {
 	if(obj->weight > player->capacity) {
-		printf("%s is too heavy for you to pick up.\n", obj->desc);
+		printf("%s is too heavy for you to pick up.\n", obj->desc(obj));
 		return;
 	}
 	else if(obj->is_liquid) {
-		printf("You need something to hold %s.\n", obj->desc);
+		printf("You need something to hold %s.\n", obj->desc(obj));
 		return;
 	}
-	printf("You grabbed %s from %s.\n", obj->desc, obj->loc->desc);
+	printf("You grabbed %s from %s.\n", obj->desc(obj), obj->loc->desc(obj->loc));
 	obj->loc = player;
 	player->capacity -= obj->weight;
 }
@@ -229,19 +239,19 @@ void grab_object(object *obj) {
 void drop_object(object *obj) {
 	obj->loc = player->loc;
 	player->capacity += obj->weight;
-	printf("You dropped %s.\n", obj->desc);
+	printf("You dropped %s.\n", obj->desc(obj));
 }
 
 void fill_object(object *obj, object *tar) {
 	tar->loc = obj;
 	obj->capacity -= tar->weight;
-	printf("You filled %s with %s.\n", obj->desc, tar->desc);
+	printf("You filled %s with %s.\n", obj->desc(obj), tar->desc(tar));
 }
 
 void give_object(object *obj, object *tar) {
 	obj->loc = tar;
 	tar->capacity -= obj->weight;
-	printf("You gave %s %s.\n", tar->desc, obj->desc);
+	printf("You gave %s %s.\n", tar->desc(tar), obj->desc(obj));
 }
 
 object *get_passage(object *from, object *to) {
@@ -280,7 +290,7 @@ void exec_fill(const char *noun, const char *target) {
 	if(obj == NULL || tar == NULL) return;
 	else if(obj->holds_liquid && tar->is_liquid && obj->capacity >= tar->weight) fill_object(obj, tar);
 	else if(!obj->holds_liquid && !tar->is_liquid && obj->capacity >= tar->weight) fill_object(obj, tar);
-	else printf("%s cannot hold %s.\n", obj->desc, tar->desc);
+	else printf("%s cannot hold %s.\n", obj->desc(obj), tar->desc(tar));
 }
 
 void exec_empty(const char *noun, const char *target) {
@@ -292,10 +302,10 @@ void exec_empty(const char *noun, const char *target) {
 			if(obj == obj2->loc) {
 				obj->capacity += obj2->weight;
 				obj2->loc = player->loc;
-				printf("%s\n", obj2->desc);
+				printf("%s\n", obj2->desc(obj2));
 			}
 		}
-		printf("From %s onto the floor of %s.\n", obj->desc, player->loc->desc);
+		printf("From %s onto the floor of %s.\n", obj->desc(obj), player->loc->desc(player->loc));
 	}
 }
 
@@ -339,7 +349,7 @@ void exec_unequip(const char *noun, const char *target) {
 	object *obj = get_object(noun);
 	if(obj != NULL && obj == player->equip) {
 		player->equip = NULL;
-		printf("You unequipped the %s.\n", obj->desc);
+		printf("You unequipped the %s.\n", obj->desc(obj));
 		return;
 	}
 	printf("You are not holding %s.\n", noun);
@@ -391,9 +401,9 @@ void exec_give(const char *noun, const char *target) {
 	else if(tar->loc == player && obj->health > 0 && obj->want == tar) 
 		give_object(tar, obj);
 	else if(obj->loc == player && tar->health > 0 && tar->want != obj)
-		printf("'I do not want %s' says %s.\n", obj->desc, tar->desc); 
+		printf("'I do not want %s' says %s.\n", obj->desc(obj), tar->desc(tar)); 
 	else if(tar->loc == player && obj->health > 0 && obj->want != tar) 
-		printf("'I do not want %s' says %s.\n", tar->desc, obj->desc); 
+		printf("'I do not want %s' says %s.\n", tar->desc(tar), obj->desc(obj)); 
 }
 
 void exec_talk(const char *noun, const char *target) {
