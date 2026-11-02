@@ -23,12 +23,13 @@ static char input[100];
 // OPINION, SIZE, PHYS QUALITY, SHAPE, AGE, COLOR, ORIGIN, MATERIAL, TYPE, PURPOSE
 
 typedef struct opinion {
+	const int id;
 	const char *value;
 	const char *color;
 } opinion;
 
 const opinion opinions[] = {
-	{"horrible", RED}
+	{0, "null", RED}
 };
 // }}}
 
@@ -217,13 +218,23 @@ const char *read_desc(object *obj) {
 	static char str[128] = "";
 	str[0] = '\0';
 	
-	strcat(str, "a");
+	strcat(str, "the");
+
+	// OPINION
+	if(obj->opinion.id != 0) {
+		strcat(str, " ");
+		strcat(str, obj->opinion.color);
+		strncat(str, obj->opinion.value, strlen(obj->opinion.value));
+		strcat(str, RESET);
+	}
+
+	// OBJECT NAME
 	strcat(str, " ");
-	strcat(str, obj->opinion.color);
-	strncat(str, obj->opinion.value, strlen(obj->opinion.value));
-	strcat(str, RESET);
-	strcat(str, " ");
-	strncat(str, obj->name, strlen(obj->name));
+	char *ptr = strchr(obj->name, '_');
+	if(ptr != NULL) {
+		int len = ptr - obj->name;
+		strncat(str, obj->name, len);
+	} else strncat(str, obj->name, sizeof(obj->name));
 	return str;
 }
 
@@ -280,13 +291,15 @@ void drop_object(object *obj) {
 void fill_object(object *obj, object *tar) {
 	tar->loc = obj;
 	obj->capacity -= tar->weight;
-	printf("You filled %s with %s.\n", obj->desc(obj), tar->desc(tar));
+	printf("You filled %s", obj->desc(obj));
+	printf(" with %s.\n", tar->desc(tar));
 }
 
 void give_object(object *obj, object *tar) {
 	obj->loc = tar;
 	tar->capacity -= obj->weight;
-	printf("You gave %s %s.\n", tar->desc(tar), obj->desc(obj));
+	printf("You gave %s", tar->desc(tar));
+	printf(" %s.\n", obj->desc(obj));
 }
 
 object *get_passage(object *from, object *to) {
@@ -325,7 +338,10 @@ void exec_fill(const char *noun, const char *target) {
 	if(obj == NULL || tar == NULL) return;
 	else if(obj->holds_liquid && tar->is_liquid && obj->capacity >= tar->weight) fill_object(obj, tar);
 	else if(!obj->holds_liquid && !tar->is_liquid && obj->capacity >= tar->weight) fill_object(obj, tar);
-	else printf("%s cannot hold %s.\n", obj->desc(obj), tar->desc(tar));
+	else {
+		printf("%s cannot hold", obj->desc(obj));
+		printf(" %s.\n", tar->desc(tar));
+	}
 }
 
 void exec_empty(const char *noun, const char *target) {
@@ -435,10 +451,10 @@ void exec_give(const char *noun, const char *target) {
 		give_object(obj, tar);
 	else if(tar->loc == player && obj->health > 0 && obj->want == tar) 
 		give_object(tar, obj);
-	else if(obj->loc == player && tar->health > 0 && tar->want != obj)
-		printf("'I do not want %s' says %s.\n", obj->desc(obj), tar->desc(tar)); 
-	else if(tar->loc == player && obj->health > 0 && obj->want != tar) 
-		printf("'I do not want %s' says %s.\n", tar->desc(tar), obj->desc(obj)); 
+	else if(obj->loc == player && tar->health > 0 && tar->want != obj) 
+		printf("'I have no use for that.' says %s.\n", tar->desc(tar)); 
+	else if(tar->loc == player && obj->health > 0 && obj->want != tar)
+		printf("'I have no use for that.' says %s.\n", obj->desc(obj)); 
 }
 
 void exec_talk(const char *noun, const char *target) {
