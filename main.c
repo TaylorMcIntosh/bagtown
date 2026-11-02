@@ -26,9 +26,10 @@ typedef struct object {
 	
 	struct object *loc;
 	struct object *dest;
-	struct object *prop;	
+	struct object *prop;
 	struct object *equip;
-	
+	struct object *want;
+
 	int health;
 	int weight;
 	int capacity;
@@ -63,7 +64,7 @@ object objects[] = {
 	,"You have "
 	,""
 	,""
-	, field, NULL, NULL, NULL
+	, field, NULL, NULL, NULL, NULL
 	, 20, 100, 20
 	, false, false, always_true
 	},
@@ -73,7 +74,7 @@ object objects[] = {
 	,"You see "  	  
 	,""
 	,""
-	, NULL, NULL, NULL, NULL
+	, NULL, NULL, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, true, always_true
 	},
@@ -83,7 +84,7 @@ object objects[] = {
 	,"You see "  	  
 	,""
 	,""
-	, NULL, NULL, NULL, NULL
+	, NULL, NULL, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, true, always_true	
 	},
@@ -93,7 +94,7 @@ object objects[] = {
 	,"It's filled with " 
 	,""
 	,""
-	, crate, NULL, NULL, NULL
+	, crate, NULL, NULL, NULL, NULL
 	, 0, 1, 1
 	, false, true, always_true 
 	},
@@ -103,7 +104,7 @@ object objects[] = {
 	,""		  
 	,""
 	,""
-	, field, NULL, NULL, NULL
+	, field, NULL, NULL, NULL, NULL
 	, 0, 1, 0
 	, false, false, always_true
 	},
@@ -113,7 +114,7 @@ object objects[] = {
 	,"It's filled with " 
 	,""
 	,""
-	, cave, NULL, NULL, NULL
+	, cave, NULL, NULL, NULL, NULL
 	, 0, 25, 20
 	, false, false, always_true
 	},
@@ -123,7 +124,7 @@ object objects[] = {
 	,""		  
 	,""
 	,""
-	, cave, NULL, NULL, NULL
+	, cave, NULL, NULL, NULL, NULL
 	, 0, 1, 0
 	, true, false, always_true
 	},
@@ -133,7 +134,7 @@ object objects[] = {
 	,"They have "	  
 	,""
 	,""
-	, field, NULL, NULL, NULL
+	, field, NULL, NULL, NULL, coin
 	, 20, 90, 20
 	, false, false, always_true
 	},
@@ -143,7 +144,7 @@ object objects[] = {
 	,""		  
 	,""
 	,"You walk into the cave.\n"
-	, field, cave, NULL, NULL
+	, field, cave, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, cave_check_entr
 	},
@@ -153,7 +154,7 @@ object objects[] = {
 	,""		  
 	,""
 	,"The cave is blocked by the old man.\n"
-	, field, NULL, cave, NULL
+	, field, NULL, cave, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, cave_check_blkd
 	},
@@ -163,7 +164,7 @@ object objects[] = {
 	,""		  
 	,""
 	,"You exit the cave.\n"
-	, cave, field, NULL, NULL
+	, cave, field, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, always_true
 	},
@@ -372,8 +373,10 @@ void exec_give(const char *noun, const char *target) {
 	object *obj = get_object(noun);
 	object *tar = get_object(target);
 	if (obj == NULL || tar == NULL) return;
-	else if(obj->loc == player && tar->health > 0) give_object(obj, tar);
-	else if(tar->loc == player && obj->health > 0) give_object(tar, obj);
+	else if(obj->loc == player && tar->health > 0 && tar->want == obj) 
+		give_object(obj, tar);
+	else if(tar->loc == player && obj->health > 0 && obj->want == tar) 
+		give_object(tar, obj);
 }
 
 typedef void (*command_func)(const char *noun, const char *target);
