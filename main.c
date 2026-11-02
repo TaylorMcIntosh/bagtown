@@ -32,6 +32,18 @@ typedef struct opinion {
 
 const opinion opinions[] = {
     {0,  "null", RED},
+    {1,  "", RESET},
+    {2,  "vulgar ", RESET},
+    {3,  "cursed ", RESET},
+    {4,  "morbid ", RESET},
+    {5,  "sultry ", RESET},
+    {6,  "gauche ", RESET},
+    {7,  "normal ", RESET},
+    {8,  "quaint ", RESET},
+    {9,  "polite ", RESET},
+    {10, "formal ", RESET},
+    {11, "valued " RESET},
+    {12, "heroic ", RESET},
 };
 // }}}
 
@@ -221,17 +233,16 @@ const char *read_desc(object *obj) {
     str[0] = '\0';
     
     strcat(str, "the");
+    strcat(str, " ");
 
     // OPINION
     if(obj->opinion.id != 0) {
-        strcat(str, " ");
         strcat(str, obj->opinion.color);
         strncat(str, obj->opinion.value, strlen(obj->opinion.value));
         strcat(str, RESET);
     }
 
     // OBJECT NAME
-    strcat(str, " ");
     const char *ptr = strchr(obj->name, '_');
     if(ptr != NULL) {
         int len = ptr - obj->name;
