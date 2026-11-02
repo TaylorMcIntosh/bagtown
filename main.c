@@ -144,7 +144,7 @@ object objects[] = {
 	,"You walk into the cave.\n"
 	, field, cave, NULL, NULL
 	, 0, 9999, 9999
-	, false, false, always_true
+	, false, false, cave_check
 	},
 	
 	{"cave_blkd"
@@ -154,7 +154,7 @@ object objects[] = {
 	,"The cave is blocked by the old man.\n"
 	, field, NULL, cave, NULL
 	, 0, 9999, 9999
-	, false, false, cave_check
+	, false, false, always_true
 	},
 
 	{"cave_exit"
@@ -223,7 +223,7 @@ object *get_passage(object *from, object *to) {
 	if(from == NULL && to == NULL) return NULL;
 	object *obj;
 	for(obj = objects; obj < NUM_OBJ; obj++) {
-		if(obj->loc == from && obj->dest == to)
+		if(obj->exists() && obj->loc == from && obj->dest == to)
 			return obj;
 	}
 	return NULL;
@@ -233,7 +233,7 @@ object *get_prop(object *from, object *to) {
 	if(from == NULL && to == NULL) return NULL;
 	object *obj;
 	for(obj = objects; obj < NUM_OBJ; obj++) {
-		if(obj->loc == from && obj->prop == to)
+		if(obj->exists() && obj->loc == from && obj->prop == to)
 			return obj;
 	}
 	return NULL;
