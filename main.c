@@ -18,6 +18,8 @@ static char input[100];
 //    talk [ talk to sentient object (health > 0 || animated) ],
 //    attack [ attacks a sentient object (health > 0 || animated) ]
 //    Order of adjectives -> Rework how descriptions work
+//    Add more opinions etc
+//    Add method to randomize opinion [ and future adjectives ] on startup
 
 // ADJECTIVES {{{
 // OPINION, SIZE, PHYS QUALITY, SHAPE, AGE, COLOR, ORIGIN, MATERIAL, TYPE, PURPOSE
