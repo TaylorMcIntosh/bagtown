@@ -13,7 +13,9 @@ static bool is_playing = true;
 static char input[100];
 
 // TODO : 
-//	  talk [ talk to sentient object (health>0 || animated) ],
+//	  talk [ talk to sentient object (health > 0 || animated) ],
+//	  attack [ attacks a sentient object (health > 0 || animated) ]
+//	  Order of adjectives -> Rework how descriptions work
 
 // OBJECTS {{{
 typedef struct object {
