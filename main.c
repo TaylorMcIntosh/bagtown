@@ -196,8 +196,8 @@ const char *read_desc(object *obj) {
 }
 
 bool always_true(void) { return true; }
-bool cave_check_entr(void) { return coin->loc == man; }
-bool cave_check_blkd(void) { return coin->loc != man; }
+bool cave_check_entr(void) { return man->want->loc == man; }
+bool cave_check_blkd(void) { return man->want->loc != man; }
 // }}}
 
 // MISC {{{
