@@ -21,6 +21,15 @@ static char input[100];
 
 // ADJECTIVES {{{
 // OPINION, SIZE, PHYS QUALITY, SHAPE, AGE, COLOR, ORIGIN, MATERIAL, TYPE, PURPOSE
+
+typedef struct opinion {
+	const char *value;
+	const char *color;
+} opinion;
+
+const opinion opinions[] = {
+	{"horrible", RED}
+};
 // }}}
 
 // OBJECTS {{{
@@ -31,6 +40,8 @@ typedef struct object {
 	const char *details;
 	const char *text_go;
 	const char *dialogue;
+
+	struct opinion opinion;
 
 	struct object *loc;
 	struct object *dest;
@@ -75,6 +86,7 @@ object objects[] = {
 	,""
 	,""
 	,""
+	, opinions[0]
 	, field, NULL, NULL, NULL, NULL
 	, 20, 100, 20
 	, false, false, always_true
@@ -86,6 +98,7 @@ object objects[] = {
 	,""
 	,""
 	,""
+	, opinions[0]
 	, NULL, NULL, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, true, always_true
@@ -97,6 +110,7 @@ object objects[] = {
 	,""
 	,""
 	,""
+	, opinions[0]
 	, NULL, NULL, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, true, always_true	
@@ -108,6 +122,7 @@ object objects[] = {
 	,""
 	,""
 	,""
+	, opinions[0]
 	, crate, NULL, NULL, NULL, NULL
 	, 0, 1, 1
 	, false, true, always_true 
@@ -119,6 +134,7 @@ object objects[] = {
 	,""
 	,""
 	,""
+	, opinions[0]
 	, field, NULL, NULL, NULL, NULL
 	, 0, 1, 0
 	, false, false, always_true
@@ -130,6 +146,7 @@ object objects[] = {
 	,""
 	,""
 	,""
+	, opinions[0]
 	, cave, NULL, NULL, NULL, NULL
 	, 0, 25, 20
 	, false, false, always_true
@@ -141,6 +158,7 @@ object objects[] = {
 	,""
 	,""
 	,""
+	, opinions[0]
 	, cave, NULL, NULL, NULL, NULL
 	, 0, 1, 0
 	, true, false, always_true
@@ -152,6 +170,7 @@ object objects[] = {
 	,""
 	,""
 	,"'This is a conversation' asks the old man"
+	, opinions[0]
 	, field, NULL, NULL, NULL, coin
 	, 20, 90, 20
 	, false, false, always_true
@@ -163,6 +182,7 @@ object objects[] = {
 	,""
 	,"You walk into the cave.\n"
 	,""
+	, opinions[0]
 	, field, cave, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, cave_check_entr
@@ -174,6 +194,7 @@ object objects[] = {
 	,""
 	,"The cave is blocked by the old man.\n"
 	,""
+	, opinions[0]
 	, field, NULL, cave, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, cave_check_blkd
@@ -185,6 +206,7 @@ object objects[] = {
 	,""
 	,"You exit the cave.\n"
 	,""
+	, opinions[0]
 	, cave, field, NULL, NULL, NULL
 	, 0, 9999, 9999
 	, false, false, always_true
@@ -192,7 +214,17 @@ object objects[] = {
 };
 
 const char *read_desc(object *obj) {
-	return obj->name;
+	static char str[128] = "";
+	str[0] = '\0';
+	
+	strcat(str, "a");
+	strcat(str, " ");
+	strcat(str, obj->opinion.color);
+	strncat(str, obj->opinion.value, strlen(obj->opinion.value));
+	strcat(str, RESET);
+	strcat(str, " ");
+	strncat(str, obj->name, strlen(obj->name));
+	return str;
 }
 
 bool always_true(void) { return true; }
@@ -233,7 +265,8 @@ void grab_object(object *obj) {
 		printf("You need something to hold %s.\n", obj->desc(obj));
 		return;
 	}
-	printf("You grabbed %s from %s.\n", obj->desc(obj), obj->loc->desc(obj->loc));
+	printf("You grabbed %s ", obj->desc(obj));
+	printf("from %s.\n", obj->loc->desc(obj->loc));
 	obj->loc = player;
 	player->capacity -= obj->weight;
 }
