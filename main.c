@@ -14,7 +14,6 @@ static char input[100];
 
 // TODO : 
 //	  talk [ talk to sentient object (health>0 || animated) ],
-//	  give [ gives object to sentient object ]
 
 // OBJECTS {{{
 typedef struct object {
@@ -377,6 +376,10 @@ void exec_give(const char *noun, const char *target) {
 		give_object(obj, tar);
 	else if(tar->loc == player && obj->health > 0 && obj->want == tar) 
 		give_object(tar, obj);
+	else if(obj->loc == player && tar->health > 0 && tar->want != obj)
+		printf("'I do not want %s' says %s.\n", obj->desc, tar->desc); 
+	else if(tar->loc == player && obj->health > 0 && obj->want != tar) 
+		printf("'I do not want %s' says %s.\n", tar->desc, obj->desc); 
 }
 
 typedef void (*command_func)(const char *noun, const char *target);
