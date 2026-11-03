@@ -21,6 +21,7 @@ int roll_dice(int amt, int side);
 // TODO : 
 //    talk [ talk to sentient object (health > 0 || animated) ],
 //    attack [ attacks a sentient object (health > 0 || animated) ]
+//    reaction from sentient objects
 //    Order of adjectives -> Rework how descriptions work
 
 // ADJECTIVES {{{
@@ -69,6 +70,7 @@ typedef struct object {
     int health;
     int weight;
     int capacity;
+    int attack;
 
     bool is_liquid;
     bool holds_liquid;
@@ -105,7 +107,7 @@ object objects[] = {
     ,""
     , opinions
     , field, NULL, NULL, NULL, NULL
-    , 20, 100, 20
+    , 20, 100, 20, 5
     , false, false, always_true
     },
     // MAP
@@ -117,7 +119,7 @@ object objects[] = {
     ,""
     , opinions
     , NULL, NULL, NULL, NULL, NULL
-    , 0, 9999, 9999
+    , 0, 9999, 9999, 5
     , false, true, always_true
     },
 
@@ -129,7 +131,7 @@ object objects[] = {
     ,""
     , opinions
     , NULL, NULL, NULL, NULL, NULL
-    , 0, 9999, 9999
+    , 0, 9999, 9999, 5
     , false, true, always_true  
     },
     // ITEMS
@@ -141,7 +143,7 @@ object objects[] = {
     ,""
     , opinions
     , crate, NULL, NULL, NULL, NULL
-    , 0, 1, 1
+    , 0, 1, 1, 5
     , false, true, always_true 
     },
     
@@ -153,7 +155,7 @@ object objects[] = {
     ,""
     , opinions
     , field, NULL, NULL, NULL, NULL
-    , 0, 1, 0
+    , 0, 1, 0, 5
     , false, false, always_true
     },
     
@@ -165,7 +167,7 @@ object objects[] = {
     ,""
     , opinions
     , cave, NULL, NULL, NULL, NULL
-    , 0, 25, 20
+    , 0, 25, 20, 5
     , false, false, always_true
     },
     
@@ -177,7 +179,7 @@ object objects[] = {
     ,""
     , opinions
     , cave, NULL, NULL, NULL, NULL
-    , 0, 1, 0
+    , 0, 1, 0, 5
     , true, false, always_true
     },
     // PEOPLE
@@ -189,7 +191,7 @@ object objects[] = {
     ,"'This is a conversation' says the man"
     , opinions
     , field, NULL, NULL, NULL, coin
-    , 20, 90, 20
+    , 20, 90, 20, 5
     , false, false, always_true
     },
     // PASSAGES
@@ -201,7 +203,7 @@ object objects[] = {
     ,""
     , opinions
     , field, cave, NULL, NULL, NULL
-    , 0, 9999, 9999
+    , 0, 9999, 9999, 5
     , false, false, cave_check_entr
     },
     
@@ -213,7 +215,7 @@ object objects[] = {
     ,""
     , opinions
     , field, NULL, cave, NULL, NULL
-    , 0, 9999, 9999
+    , 0, 9999, 9999, 5
     , false, false, cave_check_blkd
     },
 
@@ -225,7 +227,7 @@ object objects[] = {
     ,""
     , opinions
     , cave, field, NULL, NULL, NULL
-    , 0, 9999, 9999
+    , 0, 9999, 9999, 5
     , false, false, always_true
     },
 };
@@ -238,9 +240,10 @@ const char *read_desc(object *obj) {
     strcat(str, " ");
 
     // OPINION
-    if(obj->opinion != NULL || obj->opinion->id != 0) {
+    if(obj->opinion != NULL || obj->opinion->id != 0 || obj->opinion->id != 7) {
         strcat(str, obj->opinion->color);
         strcat(str, obj->opinion->value);
+	strcat(str, RESET);
     }
 
     // OBJECT NAME
@@ -488,6 +491,19 @@ void exec_talk(const char *noun, const char *target) {
     else if(obj->health > 0 && obj->want->loc != obj) printf("%s.\n", obj->dialogue);
 }
 
+void exec_attack(const char *noun, const char *target) {
+    object *obj = get_object(noun);
+    if(obj == NULL) return;
+    else if(obj->health > 0) {
+    	obj->health -= player->attack;
+    	printf("You did %d damage to %s.\n", player->attack, obj->desc(obj));
+    	//obj->reaction();
+    }
+    else if(obj->health <=0) {
+	printf("%s is already dead.\n", obj->desc(obj));
+    }
+}
+
 typedef void (*command_func)(const char *noun, const char *target);
 
 typedef struct {
@@ -510,6 +526,7 @@ static const command commands[] = {
     {"drop"     , exec_drop},
     {"empty"    , exec_empty},
     {"equip"    , exec_equip},
+    {"attack"   , exec_attack},
     {"unequip"  , exec_unequip},
     {"inventory"    , exec_inventory},
 };
